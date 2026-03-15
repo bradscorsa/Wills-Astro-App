@@ -159,10 +159,11 @@
                 const data = await response.json();
                 processForecast(data);
 
-            } catch (error) {
+           } catch (error) {
                 console.error("Error fetching data:", error);
                 document.getElementById('status-icon').innerText = "⚠️";
-                document.getElementById('status-text').innerText = "Failed to load data. Make sure your API key is active.";
+                // This line will now print the exact error from the server to your screen
+                document.getElementById('status-text').innerText = "Error details: " + error.message;
             }
         }
 
