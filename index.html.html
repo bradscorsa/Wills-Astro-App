@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stargazing Conditions</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #1e1e1e;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
+        }
+        #status-icon {
+            font-size: 100px;
+            margin: 20px 0;
+            line-height: 1;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+        }
+        .hours-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .hour-item {
+            background-color: #2c2c2c;
+            margin: 10px 0;
+            padding: 14px 18px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .hour-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 6px;
+        }
+        .conditions-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 14px;
+            color: #cccccc;
+        }
+        .good-time {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .loading {
+            color: #aaaaaa;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Tonight's Conditions</h1>
+        <div id="status-icon" class="loading">⏳</div>
+        <p id="status-text">Analyzing atmospheric conditions...</p>
+        
+        <ul id="hours-list" class="hours-list">
+            </ul>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const ASTROPHERIC_API_URL = 'https://astrosphericpublicaccess.azurewebsites.net/api/GetForecastData_V1'; 
+        const API_KEY = '47341ACCFADF0DBA19979C1127C4554E4933FD8A433EB829034C5861B06F2C44E801A199'; 
+        const LAT = 42.37;
+        const LON = -83.47;
+        
+        // --- THRESHOLDS ---
+        const CLOUD_THRESHOLD = 30; 
+        const SEEING_MIN = 3;       
+        const TRANS_MAX = 13;       
+
+        // --- HELPER FUNCTIONS ---
+        function getSeeingText(val) {
+            if (val >= 5) return "Excellent";
+            if (val === 4) return "Above Average";
+            if (val === 3) return "Average";
+            if (val === 2) return "Below Average";
+            if (val === 1) return "Poor";
+            return "Cloudy";
+        }
+
+        function getTransText(val) {
+            if (val <= 5) return "Excellent";
+            if (val <= 9) return "Above Average";
+            if (val <= 13) return "Average";
+            if (val <= 23) return "Below Average";
+            if (val <= 27) return "Poor";
+            return "Cloudy";
+        }
+
+        function getMoonData(date) {
+            const synodicMonth = 29.53058867;
+            const knownNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14, 0)).getTime();
+            const diff = date.getTime() - knownNewMoon;
+            const days = diff / (1000 * 60 * 60 * 24);
+            let phase = (days % synodicMonth) / synodicMonth;
+            if (phase < 0) phase += 1;
+            
+            const illumination = Math.round((1 - Math.cos(phase * 2 * Math.PI)) / 2 * 100);
+            
+            let phaseName = "";
+            if (phase < 0.03 || phase > 0.97) phaseName = "🌑 New Moon";
+            else if (phase < 0.22) phaseName = "🌒 Waxing Crescent";
+            else if (phase < 0.28) phaseName = "🌓 First Quarter";
+            else if (phase < 0.47) phaseName = "🌔 Waxing Gibbous";
+            else if (phase < 0.53) phaseName = "🌕 Full Moon";
+            else if (phase < 0.72) phaseName = "🌖 Waning Gibbous";
+            else if (phase < 0.78) phaseName = "🌗 Last Quarter";
+            else phaseName = "🌘 Waning Crescent";
+
+            return { phaseName, illumination };
+        }
+
+        async function fetchAstroData() {
+            try {
+                const requestPayload = { Latitude: LAT, Longitude: LON, APIKey: API_KEY };
+
+                const response = await fetch(ASTROPHERIC_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestPayload)
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const data = await response.json();
+                processForecast(data);
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById('status-icon').innerText = "⚠️";
+                document.getElementById('status-text').innerText = "Failed to load data. Make sure your API key is active.";
+            }
+        }
+
+        function processForecast(data) {
+            const clearHours = [];
+            const startTime = new Date(data.LocalStartTime);
+            const hoursToCheck = 24;
+
+            for (let i = 0; i < hoursToCheck; i++) {
+                const currentHourTime = new Date(startTime.getTime() + (i * 60 * 60 * 1000));
+                const hourOfDay = currentHourTime.getHours();
+                
+                // Estimate dark hours (8 PM to 5 AM)
+                const isDark = hourOfDay >= 20 || hourOfDay <= 5;
+                
+                const cData = data.RDPS_CloudCover ? data.RDPS_CloudCover[i] : null;
+                const sData = data.Astrospheric_Seeing ? data.Astrospheric_Seeing[i] : null;
+                const tData = data.Astrospheric_Transparency ? data.Astrospheric_Transparency[i] : null;
+
+                const cloudCoverPercent = cData ? (cData.Value ?? cData.value ?? cData) : 100;
+                const seeingValue = sData ? (sData.Value ?? sData.value ?? sData) : 0;
+                const transValue = tData ? (tData.Value ?? tData.value ?? tData) : 30;
+
+                if (isDark && cloudCoverPercent <= CLOUD_THRESHOLD && seeingValue >= SEEING_MIN && transValue <= TRANS_MAX) {
+                    const timeString = currentHourTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const moonData = getMoonData(currentHourTime);
+                    
+                    clearHours.push({
+                        time: timeString,
+                        cloudCover: cloudCoverPercent,
+                        seeingText: getSeeingText(seeingValue),
+                        transText: getTransText(transValue),
+                        moonPhase: moonData.phaseName,
+                        moonIllum: moonData.illumination
+                    });
+                }
+            }
+
+            // Update the UI
+            const iconElement = document.getElementById('status-icon');
+            const textElement = document.getElementById('status-text');
+            const listElement = document.getElementById('hours-list');
+            listElement.innerHTML = ''; 
+
+            if (clearHours.length > 0) {
+                iconElement.innerText = "👍";
+                iconElement.style.color = "#4caf50";
+                
+                // Check if Moon is bright
+                const maxIllum = Math.max(...clearHours.map(h => h.moonIllum));
+                if (maxIllum > 75) {
+                    textElement.innerText = "The atmosphere is stable! However, a bright Moon might wash out deep-space targets. Here are your clear hours:";
+                } else {
+                    textElement.innerText = "The atmosphere is stable and the skies are dark! Here are your prime shooting hours:";
+                }
+
+                clearHours.forEach(hour => {
+                    const li = document.createElement('li');
+                    li.className = 'hour-item';
+                    li.innerHTML = `
+                        <div class="hour-header">
+                            <span class="good-time">${hour.time}</span>
+                            <span style="font-size: 14px; color: #aaa;">${hour.moonPhase} (${hour.moonIllum}%)</span>
+                        </div>
+                        <div class="conditions-row">
+                            <span>☁️ Cloud Cover: ${hour.cloudCover}%</span>
+                            <span>✨ Seeing: ${hour.seeingText}</span>
+                            <span>🌫️ Transparency: ${hour.transText}</span>
+                        </div>
+                    `;
+                    listElement.appendChild(li);
+                });
+            } else {
+                iconElement.innerText = "👎";
+                iconElement.style.color = "#f44336";
+                textElement.innerText = "Not looking great tonight. Either too cloudy, or atmospheric turbulence will wash out your shots.";
+            }
+        }
+
+        fetchAstroData();
+    </script>
+</body>
+</html>
