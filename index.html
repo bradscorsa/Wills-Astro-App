@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stargazing Conditions</title>
+    <title>Astro Conditions</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js');
+      }
+    </script>
+
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -86,18 +95,15 @@
     </div>
 
     <script>
-        // --- CONFIGURATION ---
         const ASTROPHERIC_API_URL = 'https://astrosphericpublicaccess.azurewebsites.net/api/GetForecastData_V1'; 
         const API_KEY = '47341ACCFADF0DBA19979C1127C4554E4933FD8A433EB829034C5861B06F2C44E801A199'; 
         const LAT = 42.37;
         const LON = -83.47;
         
-        // --- THRESHOLDS ---
         const CLOUD_THRESHOLD = 30; 
         const SEEING_MIN = 3;       
         const TRANS_MAX = 13;       
 
-        // --- HELPER FUNCTIONS ---
         function getSeeingText(val) {
             if (val >= 5) return "Excellent";
             if (val === 4) return "Above Average";
@@ -142,7 +148,6 @@
         async function fetchAstroData() {
             try {
                 const requestPayload = { Latitude: LAT, Longitude: LON, APIKey: API_KEY };
-
                 const response = await fetch(ASTROPHERIC_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -170,7 +175,6 @@
                 const currentHourTime = new Date(startTime.getTime() + (i * 60 * 60 * 1000));
                 const hourOfDay = currentHourTime.getHours();
                 
-                // Estimate dark hours (8 PM to 5 AM)
                 const isDark = hourOfDay >= 20 || hourOfDay <= 5;
                 
                 const cData = data.RDPS_CloudCover ? data.RDPS_CloudCover[i] : null;
@@ -196,7 +200,6 @@
                 }
             }
 
-            // Update the UI
             const iconElement = document.getElementById('status-icon');
             const textElement = document.getElementById('status-text');
             const listElement = document.getElementById('hours-list');
@@ -206,7 +209,6 @@
                 iconElement.innerText = "👍";
                 iconElement.style.color = "#4caf50";
                 
-                // Check if Moon is bright
                 const maxIllum = Math.max(...clearHours.map(h => h.moonIllum));
                 if (maxIllum > 75) {
                     textElement.innerText = "The atmosphere is stable! However, a bright Moon might wash out deep-space targets. Here are your clear hours:";
