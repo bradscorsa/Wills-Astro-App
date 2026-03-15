@@ -9,10 +9,10 @@
   "theme_color": "#1e1e1e",
   "icons": [
     {
-      "src": "icon.png",
-      "sizes": "192x192 512x512 2048x2048 any",
+      "src": "https://via.placeholder.com/512.png/000000/FFFFFF/?text=Astro",
+      "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
