@@ -81,6 +81,33 @@
 
     <div class="container">
         <h1>Tonight's Conditions</h1>
+        <button onclick="nukeCache()" style="background-color: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 8px; margin-bottom: 20px; font-weight: bold; cursor: pointer;">
+    Force Update App
+</button>
+
+<script>
+async function nukeCache() {
+    // 1. Unregister the stubborn background service workers
+    if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let reg of registrations) {
+            await reg.unregister();
+        }
+    }
+    
+    // 2. Delete all saved offline files
+    if ('caches' in window) {
+        const keys = await caches.keys();
+        for (let key of keys) {
+            await caches.delete(key);
+        }
+    }
+    
+    // 3. Force a hard reload from the server using a unique timestamp
+    alert("Old cache wiped! Downloading the fresh version now...");
+    window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+}
+</script>
         <div id="status-icon" class="loading">⏳</div>
         <p id="status-text">Checking the skies...</p>
         
