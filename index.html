@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astro Conditions</title>
+    <title>Wills Astro App</title>
     
     <link rel="manifest" href="./manifest.json">
-    
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js');
@@ -88,125 +87,14 @@
     <div class="container">
         <h1>Tonight's Conditions</h1>
         <div id="status-icon" class="loading">⏳</div>
-        <p id="status-text">Analyzing atmospheric conditions...</p>
+        <p id="status-text">Checking the skies...</p>
         
         <ul id="hours-list" class="hours-list">
             </ul>
     </div>
 
-    const LAT = 42.37;
+    <script>
+        // --- CONFIGURATION ---
+        const LAT = 42.37;
         const LON = -83.47;
-        const CLOUD_THRESHOLD = 30; 
-
-        // Open-Meteo URL for Plymouth, MI (Cloud Cover data)
-        const OPEN_METEO_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=cloud_cover&timezone=auto&forecast_days=2`;
-
-        function getMoonData(date) {
-            const synodicMonth = 29.53058867;
-            const knownNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14, 0)).getTime();
-            const diff = date.getTime() - knownNewMoon;
-            const days = diff / (1000 * 60 * 60 * 24);
-            let phase = (days % synodicMonth) / synodicMonth;
-            if (phase < 0) phase += 1;
-            
-            const illumination = Math.round((1 - Math.cos(phase * 2 * Math.PI)) / 2 * 100);
-            
-            let phaseName = "";
-            if (phase < 0.03 || phase > 0.97) phaseName = "🌑 New Moon";
-            else if (phase < 0.22) phaseName = "🌒 Waxing Crescent";
-            else if (phase < 0.28) phaseName = "🌓 First Quarter";
-            else if (phase < 0.47) phaseName = "🌔 Waxing Gibbous";
-            else if (phase < 0.53) phaseName = "🌕 Full Moon";
-            else if (phase < 0.72) phaseName = "🌖 Waning Gibbous";
-            else if (phase < 0.78) phaseName = "🌗 Last Quarter";
-            else phaseName = "🌘 Waning Crescent";
-
-            return { phaseName, illumination };
-        }
-
-        async function fetchAstroData() {
-            try {
-                const response = await fetch(OPEN_METEO_URL);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-                const data = await response.json();
-                processForecast(data);
-
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                document.getElementById('status-icon').innerText = "⚠️";
-                document.getElementById('status-text').innerText = "Error loading data: " + error.message;
-            }
-        }
-
-        function processForecast(data) {
-            const clearHours = [];
-            const times = data.hourly.time;
-            const clouds = data.hourly.cloud_cover;
-            
-            // Limit to the next 24 hours from the data
-            const now = new Date();
-            
-            for (let i = 0; i < times.length; i++) {
-                const hourTime = new Date(times[i]);
-                
-                // Only look at future hours within the next 24 hours
-                if (hourTime >= now && hourTime < new Date(now.getTime() + 24 * 60 * 60 * 1000)) {
-                    const hourOfDay = hourTime.getHours();
-                    const isDark = hourOfDay >= 20 || hourOfDay <= 5;
-                    const cloudCoverPercent = clouds[i];
-
-                    if (isDark && cloudCoverPercent <= CLOUD_THRESHOLD) {
-                        const timeString = hourTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        const moonData = getMoonData(hourTime);
-                        
-                        clearHours.push({
-                            time: timeString,
-                            cloudCover: cloudCoverPercent,
-                            moonPhase: moonData.phaseName,
-                            moonIllum: moonData.illumination
-                        });
-                    }
-                }
-            }
-
-            const iconElement = document.getElementById('status-icon');
-            const textElement = document.getElementById('status-text');
-            const listElement = document.getElementById('hours-list');
-            listElement.innerHTML = ''; 
-
-            if (clearHours.length > 0) {
-                iconElement.innerText = "👍";
-                iconElement.style.color = "#4caf50";
-                
-                const maxIllum = Math.max(...clearHours.map(h => h.moonIllum));
-                if (maxIllum > 75) {
-                    textElement.innerText = "Skies are clear! However, a bright Moon might wash out faint targets. Best hours:";
-                } else {
-                    textElement.innerText = "Skies are dark and clear! Prime shooting hours:";
-                }
-
-                clearHours.forEach(hour => {
-                    const li = document.createElement('li');
-                    li.className = 'hour-item';
-                    li.innerHTML = `
-                        <div class="hour-header">
-                            <span class="good-time">${hour.time}</span>
-                            <span style="font-size: 14px; color: #aaa;">${hour.moonPhase} (${hour.moonIllum}%)</span>
-                        </div>
-                        <div class="conditions-row">
-                            <span>☁️ Cloud Cover: ${hour.cloudCover}%</span>
-                        </div>
-                    `;
-                    listElement.appendChild(li);
-                });
-            } else {
-                iconElement.innerText = "👎";
-                iconElement.style.color = "#f44336";
-                textElement.innerText = "Not looking great tonight. Too much cloud cover.";
-            }
-        }
-
-        fetchAstroData();
-</body>
-</html>
+        const CLOUD_THRESHOLD =
