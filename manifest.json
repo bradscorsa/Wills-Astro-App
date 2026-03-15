@@ -2,7 +2,7 @@
   "name": "Wills Astro App",
   "short_name": "AstroApp",
   "description": "Stargazing and astrophotography conditions.",
-  "start_url": "/Wills-Astro-App/",
+  "start_url": "/Wills-Astro-App/index.html",
   "scope": "/Wills-Astro-App/",
   "display": "standalone",
   "background_color": "#121212",
@@ -10,9 +10,9 @@
   "icons": [
     {
       "src": "icon.png",
-      "sizes": "2048x2048",
+      "sizes": "192x192 512x512 2048x2048 any",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
