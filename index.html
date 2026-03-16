@@ -75,12 +75,16 @@
             text-align: left;
             border: 1px solid #333;
         }
-        .target-img {
+        .target-img-container {
             width: 100%;
             height: 160px;
-            object-fit: cover;
             background-color: #000;
-            display: block;
+            overflow: hidden;
+        }
+        .target-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         .target-info { padding: 12px; }
         .target-header { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -137,8 +141,7 @@
 
         <div class="box">
             <h2>Suggested Targets</h2>
-            <div id="targets-list">
-                </div>
+            <div id="targets-list"></div>
         </div>
 
     </div>
@@ -218,7 +221,7 @@
                 orion: { code: "M-42", name: "Orion Nebula", type: "Emission Nebula", desc: "The crown jewel of the winter sky. Spectactular in photos.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg/640px-Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg" },
                 pleiades: { code: "M-45", name: "The Pleiades", type: "Open Cluster", desc: "A bright cluster of young blue stars surrounded by reflection gas.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Pleiades_large.jpg/640px-Pleiades_large.jpg" },
                 whirlpool: { code: "M-51", name: "Whirlpool Galaxy", type: "Spiral Galaxy", desc: "A classic face-on spiral galaxy interacting with a neighbor.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Messier51a.jpg/640px-Messier51a.jpg" },
-                bodes: { code: "M-81", name: "Bode's Galaxy", type: "Spiral Galaxy", desc: "A brightgrand-design spiral galaxy in Ursa Major.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/M81_HST_and_SST_and_GALEX.jpg/640px-M81_HST_and_SST_and_GALEX.jpg" },
+                bodes: { code: "M-81", name: "Bode's Galaxy", type: "Spiral Galaxy", desc: "A bright grand-design spiral galaxy in Ursa Major.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/M81_HST_and_SST_and_GALEX.jpg/640px-M81_HST_and_SST_and_GALEX.jpg" },
                 andromeda: { code: "M-31", name: "Andromeda Galaxy", type: "Spiral Galaxy", desc: "Our massive galactic neighbor. Best for wide-field lenses.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/M31_09-01-2011_%28re-processed%29.jpg/640px-M31_09-01-2011_%28re-processed%29.jpg" },
                 ring: { code: "M-57", name: "Ring Nebula", type: "Planetary Nebula", desc: "The glowing remains of a dying star.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Messier_57.jpg/640px-Messier_57.jpg" }
             };
@@ -230,11 +233,9 @@
 
             targetsList.innerHTML = seasonalTargets.map(t => `
                 <div class="target-card">
-                    <img src="${t.img}" 
-                         class="target-img" 
-                         alt="${t.name}" 
-                         crossorigin="anonymous" 
-                         referrerpolicy="no-referrer">
+                    <div class="target-img-container">
+                        <img src="${t.img}" class="target-img" alt="${t.name}" crossorigin="anonymous" referrerpolicy="no-referrer" loading="lazy">
+                    </div>
                     <div class="target-info">
                         <div class="target-header">
                             <span class="target-type">${t.type}</span>
