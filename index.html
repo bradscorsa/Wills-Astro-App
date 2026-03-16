@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wills Astro App</title>
-    
+
     <link rel="manifest" href="./manifest.json">
 
     <style>
@@ -75,42 +75,36 @@
             color: #aaaaaa;
             font-style: italic;
         }
+        .controls-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-update { background-color: #444; color: white; }
+        .btn-install { background-color: #2196F3; color: white; display: none; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1>Tonight's Conditions</h1>
-        <button onclick="nukeCache()" style="background-color: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 8px; margin-bottom: 20px; font-weight: bold; cursor: pointer;">
-    Force Update App
-</button>
 
-<script>
-async function nukeCache() {
-    // 1. Unregister the stubborn background service workers
-    if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (let reg of registrations) {
-            await reg.unregister();
-        }
-    }
-    
-    // 2. Delete all saved offline files
-    if ('caches' in window) {
-        const keys = await caches.keys();
-        for (let key of keys) {
-            await caches.delete(key);
-        }
-    }
-    
-    // 3. Force a hard reload from the server using a unique timestamp
-    alert("Old cache wiped! Downloading the fresh version now...");
-    window.location.href = window.location.pathname + '?v=' + new Date().getTime();
-}
-</script>
+        <div class="controls-container">
+            <button onclick="nukeCache()" class="btn btn-update">Force Update</button>
+            <button id="install-button" class="btn btn-install">📲 Install App</button>
+        </div>
+
         <div id="status-icon" class="loading">⏳</div>
         <p id="status-text">Checking the skies...</p>
-        
+
         <ul id="hours-list" class="hours-list"></ul>
     </div>
 
@@ -126,10 +120,54 @@ async function nukeCache() {
     </script>
 
     <script>
+        // 1. Service Worker Registration
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js');
         }
 
+        // 2. Cache Clearing Logic
+        async function nukeCache() {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let reg of registrations) { await reg.unregister(); }
+            }
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                for (let key of keys) { await caches.delete(key); }
+            }
+            alert("Old cache wiped! Downloading the fresh version now...");
+            window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+        }
+
+        // 3. Custom Install Prompt Logic
+        let deferredPrompt;
+        const installButton = document.getElementById('install-button');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome from showing its own mini-infobar
+            e.preventDefault();
+            // Stash the event so we can trigger it later
+            deferredPrompt = e;
+            // Un-hide our custom install button
+            installButton.style.display = 'block';
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt !== null) {
+                // Show the actual Android install prompt
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                    installButton.style.display = 'none';
+                }
+                // We've used the prompt, and can't use it again, throw it away
+                deferredPrompt = null;
+            }
+        });
+
+        // 4. Weather App Logic
         const LAT = 42.37;
         const LON = -83.47;
         const CLOUD_THRESHOLD = 30; 
