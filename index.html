@@ -199,7 +199,7 @@
                 localStorage.setItem('astroLat', lat);
                 localStorage.setItem('astroLon', lon);
                 localStorage.setItem('astroCity', city);
-                localStorage.removeItem('astroCache'); // Clear API Cache on location change
+                localStorage.removeItem('astroCache'); 
                 location.reload();
             });
         }
@@ -217,7 +217,7 @@
                     localStorage.setItem('astroLat', lat);
                     localStorage.setItem('astroLon', lon);
                     localStorage.setItem('astroCity', city);
-                    localStorage.removeItem('astroCache'); // Clear API Cache on location change
+                    localStorage.removeItem('astroCache');
                     location.reload();
                 }
             } catch (e) { alert("City not found."); }
@@ -258,7 +258,7 @@
             return { name: names[Math.floor(phase * 8) % 8], illum: illumination };
         }
 
-        // --- Astrospheric API Engine ---
+        // --- Astrospheric API Engine & X-Ray Extractor ---
         if (astroKey) {
             document.getElementById('astro-key-input').value = astroKey;
             document.getElementById('pro-data-box').style.display = 'block';
@@ -278,11 +278,9 @@
         async function fetchAstrospheric() {
             if (!astroKey) return;
             
-            // 2-Hour Cache Check (7200000 ms)
             const cacheRaw = localStorage.getItem('astroCache');
             if (cacheRaw) {
                 const cache = JSON.parse(cacheRaw);
-                // Ensure the cache matches the current location, otherwise pull fresh
                 if (Date.now() - cache.time < 7200000 && cache.lat == lat) {
                     renderAstrospheric(cache.data, new Date(cache.time));
                     return;
@@ -307,35 +305,46 @@
             }
         }
 
-       function renderAstrospheric(data, timeObj) {
-            // Updated extractor safely handles the number 0
-            const getVal = (obj) => {
-                if (typeof obj !== 'object') return obj;
-                if (obj.Value !== undefined) return obj.Value;
-                if (obj.value !== undefined) return obj.value;
-                return obj;
-            };
-            
+        function renderAstrospheric(data, timeObj) {
             if(data && data.Astrospheric_Seeing && data.Astrospheric_Seeing.length > 0) {
-                const seeingMap = {0:"Cloudy", 1:"Poor", 2:"Below Avg", 3:"Average", 4:"Above Avg", 5:"Excellent"};
-                const sCode = getVal(data.Astrospheric_Seeing[0]);
-                document.getElementById('val-seeing').innerText = seeingMap[sCode] || sCode;
                 
-                const tCode = getVal(data.Astrospheric_Transparency[0]);
-                let tStr = "Unknown";
-                if(tCode <= 5) tStr = "Excellent";
-                else if(tCode <= 9) tStr = "Above Avg";
-                else if(tCode <= 13) tStr = "Average";
-                else if(tCode <= 23) tStr = "Below Avg";
-                else if(tCode <= 27) tStr = "Poor";
-                else tStr = "Cloudy";
+                // X-Ray Extractor: Tears open the object if it's hiding the number!
+                const getVal = (obj) => {
+                    if (typeof obj !== 'object') return obj;
+                    if (obj === null) return "null";
+                    if (obj.Value !== undefined) return obj.Value;
+                    if (obj.value !== undefined) return obj.value;
+                    if (obj.v !== undefined) return obj.v;
+                    if (obj.raw !== undefined) return obj.raw;
+                    return JSON.stringify(obj); 
+                };
+
+                const rawSeeing = getVal(data.Astrospheric_Seeing[0]);
+                const seeingMap = {0:"Cloudy", 1:"Poor", 2:"Below Avg", 3:"Average", 4:"Above Avg", 5:"Excellent"};
+                
+                document.getElementById('val-seeing').innerText = seeingMap[rawSeeing] || rawSeeing;
+                
+                const rawTrans = getVal(data.Astrospheric_Transparency[0]);
+                let tStr = rawTrans; // Default to X-Ray if math fails
+                
+                // Check if we successfully grabbed a number, then map it
+                if (typeof rawTrans === 'number' || !isNaN(rawTrans)) {
+                    const tCode = parseFloat(rawTrans);
+                    if(tCode <= 5) tStr = "Excellent";
+                    else if(tCode <= 9) tStr = "Above Avg";
+                    else if(tCode <= 13) tStr = "Average";
+                    else if(tCode <= 23) tStr = "Below Avg";
+                    else if(tCode <= 27) tStr = "Poor";
+                    else tStr = "Cloudy";
+                }
                 
                 document.getElementById('val-trans').innerText = tStr;
                 
                 const timeStr = timeObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                document.getElementById('pro-sync-time').innerText = `Data Synced: ${timeStr} (Cached)`;
+                document.getElementById('pro-sync-time').innerText = `Data Synced: ${timeStr}`;
             }
         }
+
         // --- Open-Meteo Weather ---
         async function fetchData() {
             document.getElementById('display-city').innerText = city;
