@@ -33,13 +33,12 @@
             max-width: 400px; width: 90%; margin-top: 10px;
         }
 
-        /* New Data Dashboard Style */
         .stats-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
             margin: 20px 0; padding: 15px; background: #252525; border-radius: 12px;
         }
         .stat-item { display: flex; flex-direction: column; font-size: 13px; color: #aaa; }
-        .stat-value { font-size: 16px; color: #fff; font-weight: bold; margin-top: 4px; }
+        .stat-value { font-size: 15px; color: #fff; font-weight: bold; margin-top: 4px; }
 
         #status-icon { font-size: 70px; margin: 10px 0; }
         h1 { margin: 0; font-size: 20px; color: #eee; }
@@ -67,20 +66,20 @@
     </div>
 
     <div class="container">
-        <h1 id="header-title">Astro Conditions</h1>
+        <h1>Tonight's Skies</h1>
         
         <div id="status-icon">⏳</div>
         <p id="status-text" style="font-weight: bold;">Loading forecast...</p>
 
         <div class="stats-grid" id="current-stats" style="display:none;">
-            <div class="stat-item">Cloud Cover<div class="stat-value" id="val-clouds">--</div></div>
+            <div class="stat-item">Clouds Right Now<div class="stat-value" id="val-clouds">--</div></div>
             <div class="stat-item">Moon Phase<div class="stat-value" id="val-moon">--</div></div>
-            <div class="stat-item">Illumination<div class="stat-value" id="val-illum">--</div></div>
-            <div class="stat-item">Next Window<div class="stat-value" id="val-window">--</div></div>
+            <div class="stat-item">Moon Illum<div class="stat-value" id="val-illum">--</div></div>
+            <div class="stat-item">Next Clear Night<div class="stat-value" id="val-window" style="color:#4caf50;">Searching...</div></div>
         </div>
 
         <div id="forecast-section" style="display:none;">
-            <h2>Clear Windows</h2>
+            <h2>Tonight's Windows</h2>
             <ul id="hours-list" class="hours-list"></ul>
         </div>
     </div>
@@ -103,7 +102,8 @@
         const LAT = 42.37;
         const LON = -83.47;
         const CLOUD_THRESHOLD = 30; 
-        const OPEN_METEO_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=cloud_cover&timezone=auto&forecast_days=2`;
+        // Updated to 8 days (today + next 7)
+        const OPEN_METEO_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=cloud_cover&timezone=auto&forecast_days=8`;
 
         function getMoonData(date) {
             const synodicMonth = 29.53058867;
@@ -137,33 +137,51 @@
         }
 
         function processForecast(data) {
-            const clearHours = [];
             const times = data.hourly.time;
             const clouds = data.hourly.cloud_cover;
             const now = new Date();
             
-            // Get Current Stats for the Dashboard
-            const currentClouds = clouds[0]; 
+            // 1. Set Dashboard Stats
             const currentMoon = getMoonData(now);
-
-            document.getElementById('val-clouds').innerText = currentClouds + "%";
+            document.getElementById('val-clouds').innerText = clouds[0] + "%";
             document.getElementById('val-moon').innerText = currentMoon.name;
             document.getElementById('val-illum').innerText = currentMoon.illumination + "%";
             document.getElementById('current-stats').style.display = 'grid';
 
+            // 2. Find Tonight's specific hours (next 24h)
+            const tonightHours = [];
+            let nextClearNightStr = "None in 7 days";
+
             for (let i = 0; i < times.length; i++) {
                 const hourTime = new Date(times[i]);
+                const hr = hourTime.getHours();
+                const isDark = (hr >= 20 || hr <= 5);
+                const isClear = clouds[i] <= CLOUD_THRESHOLD;
+
+                // If this is within the next 24 hours, add to tonight's list
                 if (hourTime >= now && hourTime < new Date(now.getTime() + 24 * 60 * 60 * 1000)) {
-                    const hr = hourTime.getHours();
-                    if ((hr >= 20 || hr <= 5) && clouds[i] <= CLOUD_THRESHOLD) {
-                        clearHours.push({
+                    if (isDark && isClear) {
+                        tonightHours.push({
                             time: hourTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                             cloud: clouds[i],
                             moon: getMoonData(hourTime)
                         });
                     }
                 }
+
+                // Look for the first clear "night" overall in the 7-day dataset
+                if (nextClearNightStr === "None in 7 days" && hourTime >= now && isDark && isClear) {
+                    const options = { weekday: 'short', month: 'short', day: 'numeric' };
+                    // If it's literally tonight, say "Tonight"
+                    if (hourTime < new Date(now.getTime() + 24 * 60 * 60 * 1000)) {
+                        nextClearNightStr = "Tonight";
+                    } else {
+                        nextClearNightStr = hourTime.toLocaleDateString(undefined, options);
+                    }
+                }
             }
+
+            document.getElementById('val-window').innerText = nextClearNightStr;
 
             const icon = document.getElementById('status-icon');
             const text = document.getElementById('status-text');
@@ -172,14 +190,13 @@
             
             list.innerHTML = ''; 
 
-            if (clearHours.length > 0) {
+            if (tonightHours.length > 0) {
                 icon.innerText = "👍";
                 icon.style.color = "#4caf50";
-                text.innerText = "Skies are Dark & Clear";
-                document.getElementById('val-window').innerText = clearHours[0].time;
+                text.innerText = "Tonight is Clear";
                 forecastSection.style.display = 'block';
                 
-                clearHours.forEach(h => {
+                tonightHours.forEach(h => {
                     const li = document.createElement('li');
                     li.className = 'hour-item';
                     li.innerHTML = `
@@ -190,8 +207,7 @@
             } else {
                 icon.innerText = "👎";
                 icon.style.color = "#f44336";
-                text.innerText = "Conditions Suboptimal";
-                document.getElementById('val-window').innerText = "None";
+                text.innerText = "Clouds tonight";
                 forecastSection.style.display = 'none';
             }
         }
