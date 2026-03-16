@@ -37,7 +37,7 @@
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
             margin: 20px 0; padding: 15px; background: #252525; border-radius: 12px;
         }
-        .stat-item { display: flex; flex-direction: column; font-size: 13px; color: #aaa; }
+        .stat-item { display: flex; flex-direction: column; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
         .stat-value { font-size: 15px; color: #fff; font-weight: bold; margin-top: 4px; }
 
         #status-icon { font-size: 70px; margin: 10px 0; }
@@ -72,9 +72,9 @@
         <p id="status-text" style="font-weight: bold;">Loading forecast...</p>
 
         <div class="stats-grid" id="current-stats" style="display:none;">
-            <div class="stat-item">Clouds Right Now<div class="stat-value" id="val-clouds">--</div></div>
+            <div class="stat-item">Sky Overcast<div class="stat-value" id="val-clouds">--</div></div>
             <div class="stat-item">Moon Phase<div class="stat-value" id="val-moon">--</div></div>
-            <div class="stat-item">Moon Illum<div class="stat-value" id="val-illum">--</div></div>
+            <div class="stat-item">Moon Brightness<div class="stat-value" id="val-illum">--</div></div>
             <div class="stat-item">Next Clear Night<div class="stat-value" id="val-window" style="color:#4caf50;">Searching...</div></div>
         </div>
 
@@ -102,7 +102,6 @@
         const LAT = 42.37;
         const LON = -83.47;
         const CLOUD_THRESHOLD = 30; 
-        // Updated to 8 days (today + next 7)
         const OPEN_METEO_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=cloud_cover&timezone=auto&forecast_days=8`;
 
         function getMoonData(date) {
@@ -123,7 +122,14 @@
             else if (phase < 0.72) name = "Waning Gibbous";
             else if (phase < 0.78) name = "Last Quarter";
             else name = "Waning Crescent";
-            return { name, illumination };
+            
+            let quality = "";
+            if (illumination < 15) quality = " (Very Dark)";
+            else if (illumination < 40) quality = " (Low Glow)";
+            else if (illumination < 75) quality = " (Moderate Glow)";
+            else quality = " (Washed Out)";
+
+            return { name, illumination, quality };
         }
 
         async function fetchAstroData() {
@@ -141,14 +147,17 @@
             const clouds = data.hourly.cloud_cover;
             const now = new Date();
             
-            // 1. Set Dashboard Stats
             const currentMoon = getMoonData(now);
             document.getElementById('val-clouds').innerText = clouds[0] + "%";
             document.getElementById('val-moon').innerText = currentMoon.name;
-            document.getElementById('val-illum').innerText = currentMoon.illumination + "%";
+            
+            const illumEl = document.getElementById('val-illum');
+            illumEl.innerText = currentMoon.illumination + "%" + currentMoon.quality;
+            if (currentMoon.illumination < 15) illumEl.style.color = "#4caf50";
+            else if (currentMoon.illumination > 75) illumEl.style.color = "#ff9800";
+
             document.getElementById('current-stats').style.display = 'grid';
 
-            // 2. Find Tonight's specific hours (next 24h)
             const tonightHours = [];
             let nextClearNightStr = "None in 7 days";
 
@@ -158,7 +167,6 @@
                 const isDark = (hr >= 20 || hr <= 5);
                 const isClear = clouds[i] <= CLOUD_THRESHOLD;
 
-                // If this is within the next 24 hours, add to tonight's list
                 if (hourTime >= now && hourTime < new Date(now.getTime() + 24 * 60 * 60 * 1000)) {
                     if (isDark && isClear) {
                         tonightHours.push({
@@ -169,10 +177,8 @@
                     }
                 }
 
-                // Look for the first clear "night" overall in the 7-day dataset
                 if (nextClearNightStr === "None in 7 days" && hourTime >= now && isDark && isClear) {
                     const options = { weekday: 'short', month: 'short', day: 'numeric' };
-                    // If it's literally tonight, say "Tonight"
                     if (hourTime < new Date(now.getTime() + 24 * 60 * 60 * 1000)) {
                         nextClearNightStr = "Tonight";
                     } else {
@@ -201,7 +207,7 @@
                     li.className = 'hour-item';
                     li.innerHTML = `
                         <div class="hour-header"><span>${h.time}</span><span style="color:#888; font-size:12px;">${h.moon.name}</span></div>
-                        <div style="font-size:13px; color:#aaa;">☁️ Clouds: ${h.cloud}% | 🌙 Illum: ${h.moon.illumination}%</div>`;
+                        <div style="font-size:13px; color:#aaa;">☁️ Clouds: ${h.cloud}% | 🌙 Brightness: ${h.moon.illumination}%</div>`;
                     list.appendChild(li);
                 });
             } else {
