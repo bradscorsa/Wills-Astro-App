@@ -307,8 +307,14 @@
             }
         }
 
-        function renderAstrospheric(data, timeObj) {
-            const getVal = (obj) => typeof obj === 'object' ? (obj.value !== undefined ? obj.value : obj.Value || obj) : obj;
+       function renderAstrospheric(data, timeObj) {
+            // Updated extractor safely handles the number 0
+            const getVal = (obj) => {
+                if (typeof obj !== 'object') return obj;
+                if (obj.Value !== undefined) return obj.Value;
+                if (obj.value !== undefined) return obj.value;
+                return obj;
+            };
             
             if(data && data.Astrospheric_Seeing && data.Astrospheric_Seeing.length > 0) {
                 const seeingMap = {0:"Cloudy", 1:"Poor", 2:"Below Avg", 3:"Average", 4:"Above Avg", 5:"Excellent"};
@@ -330,7 +336,6 @@
                 document.getElementById('pro-sync-time').innerText = `Data Synced: ${timeStr} (Cached)`;
             }
         }
-
         // --- Open-Meteo Weather ---
         async function fetchData() {
             document.getElementById('display-city').innerText = city;
