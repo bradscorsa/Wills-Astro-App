@@ -18,7 +18,9 @@
             min-height: 100vh;
         }
         .top-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px; box-sizing: border-box; }
-        .location-label { font-size: 13px; color: #4caf50; margin-left: 10px; font-weight: bold; }
+        .location-info { display: flex; flex-direction: column; margin-left: 10px; }
+        .location-label { font-size: 13px; color: #4caf50; font-weight: bold; }
+        .coord-label { font-size: 10px; color: #666; font-family: monospace; margin-top: 2px; }
         .menu-btn { background: none; border: none; font-size: 28px; cursor: pointer; color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
         
         .side-menu {
@@ -45,6 +47,7 @@
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
         .btn-gps { background-color: #2196F3; color: white; }
         .btn-save { background-color: #4caf50; color: white; }
+        .btn-copy { background-color: #444; color: #ccc; font-size: 12px; }
         .btn-update { background-color: #333; color: #888; border: 1px solid #444; margin-top: 40px; }
 
         .stats-grid {
@@ -64,7 +67,10 @@
 <body>
 
     <div class="top-bar">
-        <div class="location-label" id="display-city">Plymouth, MI</div>
+        <div class="location-info">
+            <div class="location-label" id="display-city">Plymouth, MI</div>
+            <div class="coord-label" id="display-coords">42.37°N, 83.47°W</div>
+        </div>
         <button class="menu-btn" onclick="toggleMenu()">✨</button>
     </div>
 
@@ -74,10 +80,11 @@
         
         <div class="settings-section">
             <h4>Update Location</h4>
-            <input type="text" id="city-input" placeholder="Enter City, State (e.g. Nashville, TN)">
+            <input type="text" id="city-input" placeholder="Enter City, State">
             <button class="btn btn-save" onclick="saveCity()">Search & Save City</button>
             <div style="text-align: center; margin: 10px 0; color: #555;">— OR —</div>
             <button class="btn btn-gps" id="gps-btn" onclick="getGPS()">🛰️ Use GPS Location</button>
+            <button class="btn btn-copy" onclick="copyCoords()">📋 Copy Current Coordinates</button>
         </div>
 
         <button onclick="nukeCache()" class="btn btn-update">Refresh App Data</button>
@@ -102,8 +109,8 @@
     </div>
 
     <script>
-        let currentLat = localStorage.getItem('astroLat') || 42.37;
-        let currentLon = localStorage.getItem('astroLon') || -83.47;
+        let currentLat = localStorage.getItem('astroLat') || 42.3700;
+        let currentLon = localStorage.getItem('astroLon') || -83.4700;
         let currentCity = localStorage.getItem('astroCity') || "Plymouth, MI";
 
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('active'); }
@@ -116,29 +123,25 @@
             window.location.href = window.location.pathname + '?v=' + new Date().getTime();
         }
 
-        // --- GPS WITH REVERSE GEOCODING ---
+        function copyCoords() {
+            const text = `${currentLat}, ${currentLon}`;
+            navigator.clipboard.writeText(text).then(() => alert("Coordinates copied: " + text));
+        }
+
         function getGPS() {
             const btn = document.getElementById('gps-btn');
             btn.innerText = "🛰️ Locating...";
-            
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
-                    currentLat = position.coords.latitude.toFixed(4);
-                    currentLon = position.coords.longitude.toFixed(4);
-                    
-                    // Call the Reverse Geocoding API
+                    currentLat = parseFloat(position.coords.latitude).toFixed(4);
+                    currentLon = parseFloat(position.coords.longitude).toFixed(4);
                     try {
                         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${currentLat}&longitude=${currentLon}&localityLanguage=en`);
                         const geoData = await response.json();
-                        
-                        // Extract City and State (Principal Subdivision)
                         const city = geoData.city || geoData.locality || "Unknown City";
                         const state = geoData.principalSubdivisionCode ? geoData.principalSubdivisionCode.split('-')[1] : "";
                         currentCity = state ? `${city}, ${state}` : city;
-                    } catch (e) {
-                        currentCity = "GPS Location";
-                    }
-
+                    } catch (e) { currentCity = "GPS Location"; }
                     btn.innerText = "🛰️ Use GPS Location";
                     saveAndReload();
                 }, (err) => {
@@ -155,8 +158,8 @@
                 const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
                 const data = await res.json();
                 if (data.results && data.results.length > 0) {
-                    currentLat = data.results[0].latitude;
-                    currentLon = data.results[0].longitude;
+                    currentLat = parseFloat(data.results[0].latitude).toFixed(4);
+                    currentLon = parseFloat(data.results[0].longitude).toFixed(4);
                     currentCity = data.results[0].name + (data.results[0].admin1 ? `, ${data.results[0].admin1}` : "");
                     saveAndReload();
                 } else { alert("City not found."); }
@@ -187,6 +190,10 @@
 
         async function fetchAstroData() {
             document.getElementById('display-city').innerText = currentCity;
+            const latDir = currentLat >= 0 ? "N" : "S";
+            const lonDir = currentLon >= 0 ? "E" : "W";
+            document.getElementById('display-coords').innerText = `${Math.abs(currentLat)}°${latDir}, ${Math.abs(currentLon)}°${lonDir}`;
+            
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&hourly=cloud_cover&timezone=auto&forecast_days=8`;
             try {
                 const response = await fetch(url);
@@ -229,7 +236,6 @@
                     nextClearStr = (hourTime < new Date(now.getTime() + 24 * 60 * 60 * 1000)) ? "Tonight" : hourTime.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
                 }
             }
-
             document.getElementById('val-window').innerText = nextClearStr;
             const icon = document.getElementById('status-icon');
             const list = document.getElementById('hours-list');
@@ -252,7 +258,6 @@
                 document.getElementById('forecast-section').style.display = 'none';
             }
         }
-
         fetchAstroData();
     </script>
 </body>
