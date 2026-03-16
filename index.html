@@ -37,6 +37,7 @@
         
         .progress-text { font-size: 12px; color: #aaa; margin-bottom: 15px; display: block; }
         #status-icon { font-size: 70px; margin: 15px 0; }
+        .bsa-link { color: #2196F3; font-size: 13px; text-decoration: none; font-weight: bold; padding: 10px; display: inline-block; border: 1px solid #2196F3; border-radius: 6px; margin-bottom: 15px;}
 
         /* --- RED LIGHT NIGHT VISION MODE OVERRIDES --- */
         body.red-mode { background-color: #0a0000; color: #ff3333; }
@@ -53,6 +54,7 @@
         body.red-mode #status-text { color: #ff5555 !important; }
         body.red-mode #sideMenu { background-color: #110000; box-shadow: -5px 0 20px rgba(255,0,0,0.2); }
         body.red-mode .menu-btn { color: #ff3333; }
+        body.red-mode .bsa-link { color: #ff5555; border-color: #ff5555; }
     </style>
 </head>
 <body>
@@ -65,7 +67,8 @@
         <button onclick="this.parentElement.style.display='none'" style="color:#888; background:none; border:none; float:right; font-size:20px;">✕</button>
         <h3 style="margin-top:0;">Menu</h3>
         
-        <button class="btn" style="background:#4caf50; color:#121212; margin-bottom: 30px;" onclick="openLogbook()">📖 View Full Logbook</button>
+        <button class="btn" style="background:#4caf50; color:#121212; margin-bottom: 10px;" onclick="openLogbook()">📖 View Full Logbook</button>
+        <button class="btn" style="background:#ff9800; color:#121212; margin-bottom: 30px;" onclick="openScout()">⛺ Scout Merit Badge</button>
         
         <h4 style="color:#888; font-size: 12px; text-transform: uppercase;">Settings</h4>
         <button class="btn" style="background:#2196F3; color:#fff;" onclick="getGPS()">🛰️ GPS Precision Sync</button>
@@ -99,7 +102,7 @@
     </div>
 
     <div id="screen-logbook" class="screen-container" style="display:none;">
-        <button class="btn btn-nav" onclick="closeLogbook()">⬅️ Back to Dashboard</button>
+        <button class="btn btn-nav" onclick="closeScreens()">⬅️ Back to Dashboard</button>
         
         <div class="box" style="padding: 15px;">
             <h2 style="margin-top:5px; font-size: 20px;" class="location-label">Master Checklist</h2>
@@ -117,23 +120,43 @@
         </div>
     </div>
 
+    <div id="screen-scout" class="screen-container" style="display:none;">
+        <button class="btn btn-nav" onclick="closeScreens()">⬅️ Back to Dashboard</button>
+        
+        <div class="box" style="padding: 15px;">
+            <h2 style="margin-top:5px; color:#ff9800; font-size: 20px;">Astronomy Merit Badge</h2>
+            
+            <a href="http://usscouts.org/mb/mb011.asp" target="_blank" class="bsa-link">📋 View Official BSA Requirements</a>
+            
+            <p style="font-size:12px; color:#aaa; text-align:left; margin-bottom:15px; line-height: 1.5;">
+                Capture these 5 targets to help fulfill <b>Requirement 5b</b> (identify different deep-sky objects) and <b>Requirement 8</b> (observe a planet, star cluster, nebula, or galaxy).
+            </p>
+            
+            <span class="progress-text" id="scout-progress" style="font-weight:bold;">0 / 5 Captured</span>
+            <div id="scout-checklist-list"></div>
+        </div>
+    </div>
+
     <script>
         let lat = localStorage.getItem('astroLat') || 42.37;
         let lon = localStorage.getItem('astroLon') || -83.47;
         let city = localStorage.getItem('astroCity') || "Plymouth, MI";
 
-        // --- Red Light Mode Logic ---
         let isRedMode = localStorage.getItem('astroRedMode') === 'true';
         if (isRedMode) document.body.classList.add('red-mode');
 
         function toggleRedMode() {
             isRedMode = !isRedMode;
-            if (isRedMode) {
-                document.body.classList.add('red-mode');
-            } else {
-                document.body.classList.remove('red-mode');
-            }
+            if (isRedMode) document.body.classList.add('red-mode');
+            else document.body.classList.remove('red-mode');
             localStorage.setItem('astroRedMode', isRedMode);
+            
+            const cloudEl = document.getElementById('status-icon');
+            const windowEl = document.getElementById('val-window');
+            if (!isRedMode && cloudEl.innerText === "👍") {
+                cloudEl.style.color = "#4caf50";
+                windowEl.style.color = "#4caf50";
+            }
         }
 
         async function nukeCache() {
@@ -162,15 +185,26 @@
             });
         }
 
+        // --- Routing Logic ---
         function openLogbook() {
             document.getElementById('sideMenu').style.display = 'none';
             document.getElementById('screen-dashboard').style.display = 'none';
+            document.getElementById('screen-scout').style.display = 'none';
             document.getElementById('screen-logbook').style.display = 'flex';
             renderFullChecklist();
         }
 
-        function closeLogbook() {
+        function openScout() {
+            document.getElementById('sideMenu').style.display = 'none';
+            document.getElementById('screen-dashboard').style.display = 'none';
             document.getElementById('screen-logbook').style.display = 'none';
+            document.getElementById('screen-scout').style.display = 'flex';
+            renderScoutChecklist();
+        }
+
+        function closeScreens() {
+            document.getElementById('screen-logbook').style.display = 'none';
+            document.getElementById('screen-scout').style.display = 'none';
             document.getElementById('screen-dashboard').style.display = 'flex';
             updateProgress();
             renderScannedTargets();
@@ -206,12 +240,10 @@
                     }
                 }
                 
-                // Set text first
                 document.getElementById('val-window').innerText = nextClear;
                 document.getElementById('status-icon').innerText = d.hourly.cloud_cover[0] < 30 ? "👍" : "👎";
                 document.getElementById('status-text').innerText = d.hourly.cloud_cover[0] < 30 ? "Tonight is Clear" : "Cloudy Skies";
                 
-                // Apply original colors ONLY if red mode is off
                 if (!isRedMode) {
                     document.getElementById('status-icon').style.color = d.hourly.cloud_cover[0] < 30 ? "#4caf50" : "#f44336";
                     document.getElementById('val-window').style.color = "#4caf50";
@@ -353,6 +385,9 @@
             { id: "M-110", name: "Edward Young Star", type: "Elliptical Galaxy", season: [7,8,9,10,11] }
         ];
 
+        // Specific requirements for Scout Badge
+        const SCOUT_TARGET_IDS = ["SYS-1", "SYS-4", "M-42", "M-31", "M-45"];
+
         let currentScan = [];
 
         function getCompleted() {
@@ -374,8 +409,11 @@
             }
             localStorage.setItem('astroLogbook', JSON.stringify(completed));
             
+            // Re-render appropriate screen
             if (document.getElementById('screen-logbook').style.display === 'flex') {
                 renderFullChecklist();
+            } else if (document.getElementById('screen-scout').style.display === 'flex') {
+                renderScoutChecklist();
             } else {
                 renderScannedTargets();
             }
@@ -392,18 +430,7 @@
 
         function renderScannedTargets() {
             const completed = getCompleted();
-            document.getElementById('targets-list').innerHTML = currentScan.map(t => {
-                const isDone = completed.includes(t.id);
-                return `
-                    <div class="target-card ${isDone ? 'completed' : ''}" onclick="toggleTarget('${t.id}')">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="font-size:10px; color:${isDone ? '#888' : '#aaa'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
-                            <div style="font-size:22px;">${isDone ? '☑️' : '◻️'}</div>
-                        </div>
-                        <div class="target-name">${t.name}</div>
-                    </div>
-                `;
-            }).join('');
+            document.getElementById('targets-list').innerHTML = currentScan.map(t => generateCardHtml(t, completed)).join('');
         }
 
         function renderFullChecklist() {
@@ -420,19 +447,30 @@
                     return true;
                 });
             }
+            document.getElementById('full-checklist-list').innerHTML = filteredTargets.map(t => generateCardHtml(t, completed)).join('');
+        }
 
-            document.getElementById('full-checklist-list').innerHTML = filteredTargets.map(t => {
-                const isDone = completed.includes(t.id);
-                return `
-                    <div class="target-card ${isDone ? 'completed' : ''}" onclick="toggleTarget('${t.id}')">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="font-size:10px; color:${isDone ? '#888' : '#aaa'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
-                            <div style="font-size:22px;">${isDone ? '☑️' : '◻️'}</div>
-                        </div>
-                        <div class="target-name">${t.name}</div>
+        function renderScoutChecklist() {
+            const completed = getCompleted();
+            const scoutTargets = ALL_TARGETS.filter(t => SCOUT_TARGET_IDS.includes(t.id));
+            const completedCount = scoutTargets.filter(t => completed.includes(t.id)).length;
+            
+            document.getElementById('scout-progress').innerText = `${completedCount} / 5 Checked Off`;
+            document.getElementById('scout-checklist-list').innerHTML = scoutTargets.map(t => generateCardHtml(t, completed)).join('');
+        }
+
+        // Helper to keep card generation DRY
+        function generateCardHtml(t, completed) {
+            const isDone = completed.includes(t.id);
+            return `
+                <div class="target-card ${isDone ? 'completed' : ''}" onclick="toggleTarget('${t.id}')">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size:10px; color:${isDone ? '#888' : '#aaa'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
+                        <div style="font-size:22px;">${isDone ? '☑️' : '◻️'}</div>
                     </div>
-                `;
-            }).join('');
+                    <div class="target-name">${t.name}</div>
+                </div>
+            `;
         }
 
         function resetProgress() {
