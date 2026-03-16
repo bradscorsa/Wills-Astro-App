@@ -17,9 +17,11 @@
         .box { background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); text-align: center; transition: 0.3s; position: relative; }
         .location-label { color: #4caf50; font-weight: bold; font-size: 14px; transition: 0.3s; }
         .coord-label { font-size: 10px; color: #666; font-family: monospace; margin-top: 4px; display: block; }
+        
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; text-align: left; }
         .stat-item { background: #252525; padding: 12px; border-radius: 10px; font-size: 11px; color: #888; text-transform: uppercase; transition: 0.3s; }
-        .stat-value { color: #fff; font-weight: bold; font-size: 14px; margin-top: 4px; }
+        .stat-item.full-span { grid-column: 1 / -1; text-align: center; } 
+        .stat-value { color: #fff; font-weight: bold; font-size: 14px; margin-top: 4px; transition: color 0.3s ease; }
         
         .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; animation: fadeIn 0.3s ease; cursor: pointer; transition: 0.2s; }
         .target-card:active { transform: scale(0.98); }
@@ -43,7 +45,7 @@
         /* RED LIGHT OVERRIDES */
         body.red-mode { background-color: #0a0000; color: #ff3333; }
         body.red-mode .box { background-color: #1a0000; box-shadow: 0 8px 25px rgba(255,0,0,0.15); border: 1px solid #330000; }
-        body.red-mode .location-label, body.red-mode .target-name, body.red-mode .stat-value { color: #ff5555; }
+        body.red-mode .location-label, body.red-mode .target-name, body.red-mode .stat-value { color: #ff5555 !important; }
         body.red-mode .coord-label, body.red-mode .progress-text, body.red-mode .stat-item { color: #cc3333; }
         body.red-mode .stat-item, body.red-mode .target-card, body.red-mode .filter-select { background: #220000; border: 1px solid #440000; color: #ff4444; }
         body.red-mode .target-card.completed { border-color: #ff3333; background: #330000; }
@@ -64,7 +66,7 @@
 </head>
 <body>
     <div class="top-bar">
-        <span class="app-version" id="version-marker">v2.2</span>
+        <span class="app-version" id="version-marker">v2.4</span>
         <button class="menu-btn" onclick="toggleRedMode()" id="btn-red-mode">🔴</button>
         <button class="menu-btn" onclick="document.getElementById('sideMenu').style.display='block'">✨</button>
     </div>
@@ -100,9 +102,10 @@
         <div class="box">
             <div class="stats-grid">
                 <div class="stat-item">Sky Overcast<div class="stat-value" id="val-clouds">--</div></div>
+                <div class="stat-item">Wind Speed<div class="stat-value" id="val-wind">--</div></div>
                 <div class="stat-item">Moon Phase<div class="stat-value" id="val-moon">--</div></div>
                 <div class="stat-item">Moon Brightness<div class="stat-value" id="val-illum">--</div></div>
-                <div class="stat-item">Next Clear Night<div class="stat-value" id="val-window" style="color:#4caf50;">--</div></div>
+                <div class="stat-item full-span">Next Clear Night<div class="stat-value" id="val-window" style="color:#4caf50;">--</div></div>
             </div>
         </div>
 
@@ -110,8 +113,10 @@
             <button class="refresh-btn" onclick="forceFetchAstrospheric()">🔄</button>
             <h3 style="margin-top:0; font-size:16px; color:#8b5cf6; margin-bottom: 5px;">Pro Atmospheric Data</h3>
             <div class="stats-grid" style="margin-top: 10px;">
-                <div class="stat-item">Seeing (Turbulence)<div class="stat-value" id="val-seeing">--</div></div>
+                <div class="stat-item">Seeing<div class="stat-value" id="val-seeing">--</div></div>
                 <div class="stat-item">Transparency<div class="stat-value" id="val-trans">--</div></div>
+                <div class="stat-item">Pro Wind Spd<div class="stat-value" id="val-pro-wind">--</div></div>
+                <div class="stat-item">Pro Wind Dir<div class="stat-value" id="val-pro-dir">--</div></div>
             </div>
             <div style="font-size:10px; color:#666; margin-top:15px; text-align:center;" id="pro-sync-time">Fetching Data...</div>
         </div>
@@ -159,6 +164,8 @@
         let city = localStorage.getItem('astroCity') || "Plymouth, MI";
 
         let astroKey = localStorage.getItem('astroKey') || "";
+        let globalWindSpeed = 0; 
+        let globalProWindSpeed = null;
 
         let isRedMode = localStorage.getItem('astroRedMode') === 'true';
         if (isRedMode) document.body.classList.add('red-mode');
@@ -171,13 +178,24 @@
             
             const cloudEl = document.getElementById('status-icon');
             const windowEl = document.getElementById('val-window');
-            if (!isRedMode && cloudEl.innerText === "👍") {
-                cloudEl.style.color = "#4caf50";
-                windowEl.style.color = "#4caf50";
+            const windEl = document.getElementById('val-wind');
+            const proWindEl = document.getElementById('val-pro-wind');
+
+            if (!isRedMode) {
+                if (cloudEl.innerText === "👍") {
+                    cloudEl.style.color = "#4caf50";
+                    windowEl.style.color = "#4caf50";
+                }
+                windEl.style.color = getWindColor(globalWindSpeed);
+                if(globalProWindSpeed !== null) proWindEl.style.color = getWindColor(globalProWindSpeed);
+            } else {
+                cloudEl.style.color = "";
+                windowEl.style.color = "";
+                windEl.style.color = ""; 
+                proWindEl.style.color = "";
             }
         }
 
-        // --- The Cache Nuke ---
         async function nukeCache() {
             if ('serviceWorker' in navigator) {
                 const regs = await navigator.serviceWorker.getRegistrations();
@@ -312,23 +330,54 @@
         }
 
         function renderAstrospheric(data, timeObj) {
+            // Helper to get past nested objects if they exist
+            const getVal = (obj) => {
+                if (typeof obj !== 'object') return obj;
+                if (obj === null) return "null";
+                if (obj.Value && obj.Value.ActualValue !== undefined) return obj.Value.ActualValue;
+                if (obj.Value !== undefined) return obj.Value;
+                return JSON.stringify(obj); 
+            };
+
             if(data && data.Astrospheric_Seeing && data.Astrospheric_Seeing.length > 0) {
                 try {
-                    // Extracting the correct deep-nested value
-                    const sCode = data.Astrospheric_Seeing[0].Value.ActualValue;
+                    const sCode = getVal(data.Astrospheric_Seeing[0]);
                     const seeingMap = {0:"Cloudy", 1:"Poor", 2:"Below Avg", 3:"Average", 4:"Above Avg", 5:"Excellent"};
                     document.getElementById('val-seeing').innerText = seeingMap[sCode] !== undefined ? seeingMap[sCode] : sCode;
                     
-                    const tCode = data.Astrospheric_Transparency[0].Value.ActualValue;
+                    const tCode = getVal(data.Astrospheric_Transparency[0]);
                     let tStr = "Unknown";
-                    if(tCode <= 5) tStr = "Excellent";
-                    else if(tCode <= 9) tStr = "Above Avg";
-                    else if(tCode <= 13) tStr = "Average";
-                    else if(tCode <= 23) tStr = "Below Avg";
-                    else if(tCode <= 27) tStr = "Poor";
-                    else tStr = "Cloudy";
-                    
+                    if(typeof tCode === 'number') {
+                        if(tCode <= 5) tStr = "Excellent";
+                        else if(tCode <= 9) tStr = "Above Avg";
+                        else if(tCode <= 13) tStr = "Average";
+                        else if(tCode <= 23) tStr = "Below Avg";
+                        else if(tCode <= 27) tStr = "Poor";
+                        else tStr = "Cloudy";
+                    }
                     document.getElementById('val-trans').innerText = tStr;
+
+                    // NEW: Pro Wind Speed
+                    const wVelocityCode = getVal(data.RDPS_WindVelocity[0]);
+                    if (typeof wVelocityCode === 'number') {
+                        // Convert m/s to mph
+                        globalProWindSpeed = (wVelocityCode * 2.23694);
+                        const proWindEl = document.getElementById('val-pro-wind');
+                        proWindEl.innerText = globalProWindSpeed.toFixed(1) + " mph";
+                        if (!isRedMode) proWindEl.style.color = getWindColor(globalProWindSpeed);
+                    } else {
+                        document.getElementById('val-pro-wind').innerText = wVelocityCode;
+                    }
+
+                    // NEW: Pro Wind Direction
+                    const wDirCode = getVal(data.RDPS_WindDirection[0]);
+                    if (typeof wDirCode === 'number') {
+                        const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+                        const cardinal = dirs[Math.round(wDirCode / 22.5) % 16];
+                        document.getElementById('val-pro-dir').innerText = `${cardinal} (${wDirCode}°)`;
+                    } else {
+                        document.getElementById('val-pro-dir').innerText = wDirCode;
+                    }
                     
                     const timeStr = timeObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     document.getElementById('pro-sync-time').innerText = `Data Synced: ${timeStr}`;
@@ -338,18 +387,47 @@
             }
         }
 
+        // --- Math function for smooth Wind Gradient ---
+        function getWindColor(speed) {
+            let r, g, b;
+            if (speed < 7) {
+                let ratio = speed / 7;
+                r = Math.round(76 + (255 - 76) * ratio);
+                g = Math.round(175 + (235 - 175) * ratio);
+                b = Math.round(80 + (59 - 80) * ratio);
+            } else if (speed <= 12) {
+                let ratio = (speed - 7) / 5;
+                r = Math.round(255 + (244 - 255) * ratio);
+                g = Math.round(235 + (67 - 235) * ratio);
+                b = Math.round(59 + (54 - 59) * ratio);
+            } else {
+                r = 244; g = 67; b = 54;
+            }
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
         // --- Open-Meteo Weather ---
         async function fetchData() {
             document.getElementById('display-city').innerText = city;
             document.getElementById('display-coords').innerText = `${Math.abs(lat)}°${lat >= 0 ? 'N':'S'}, ${Math.abs(lon)}°${lon >= 0 ? 'E':'W'}`;
             try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover&timezone=auto&forecast_days=8`);
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover,wind_speed_10m&wind_speed_unit=mph&timezone=auto&forecast_days=8`);
                 const d = await res.json();
                 const now = new Date();
                 const moon = getMoonData(now);
+                
                 document.getElementById('val-clouds').innerText = d.hourly.cloud_cover[0] + "%";
                 document.getElementById('val-moon').innerText = moon.name;
                 document.getElementById('val-illum').innerText = moon.illum + "%";
+                
+                globalWindSpeed = d.hourly.wind_speed_10m[0];
+                const windEl = document.getElementById('val-wind');
+                windEl.innerText = globalWindSpeed + " mph";
+                
+                if (!isRedMode) {
+                    windEl.style.color = getWindColor(globalWindSpeed);
+                }
+                
                 let nextClear = "None in 7 days";
                 for(let i=0; i<d.hourly.time.length; i++) {
                     const hTime = new Date(d.hourly.time[i]);
