@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wills Astro App</title>
-
     <link rel="manifest" href="./manifest.json">
-
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -19,93 +17,41 @@
             align-items: center;
             min-height: 100vh;
         }
-
-        /* Top Bar & Menu Styles */
-        .top-bar {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-
-        .menu-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #888;
-            transition: color 0.3s;
-        }
-
-        .menu-btn:hover { color: #fff; }
-
-        /* Hidden Side Menu */
+        .top-bar { width: 100%; display: flex; justify-content: flex-end; padding: 15px; box-sizing: border-box; }
+        .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #888; }
         .side-menu {
-            position: fixed;
-            top: 0;
-            right: -250px;
-            width: 250px;
-            height: 100%;
-            background-color: #1e1e1e;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
-            transition: right 0.3s ease;
-            z-index: 1000;
-            padding: 20px;
-            box-sizing: border-box;
+            position: fixed; top: 0; right: -250px; width: 250px; height: 100%;
+            background-color: #1e1e1e; box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            transition: right 0.3s ease; z-index: 1000; padding: 20px; box-sizing: border-box;
         }
-
         .side-menu.active { right: 0; }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: #888;
-            font-size: 20px;
-            float: right;
-            cursor: pointer;
-        }
-
-        /* App Content */
-        .container {
-            background-color: #1e1e1e;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            margin-top: 20px;
-        }
-
-        #status-icon { font-size: 80px; margin: 20px 0; }
-        h1 { margin: 0; font-size: 22px; color: #eee; }
+        .close-btn { background: none; border: none; color: #888; font-size: 20px; float: right; cursor: pointer; }
         
-        .hours-list { list-style: none; padding: 0; margin-top: 20px; text-align: left; }
-        .hour-item {
-            background-color: #2c2c2c;
-            margin: 10px 0;
-            padding: 14px;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+        .container {
+            background-color: #1e1e1e; padding: 30px; border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); text-align: center;
+            max-width: 400px; width: 90%; margin-top: 10px;
         }
-        .hour-header { display: flex; justify-content: space-between; font-weight: bold; }
-        .conditions-row { font-size: 14px; color: #aaa; }
-        .good-time { color: #4caf50; }
 
-        /* Utility Buttons */
-        .btn-update {
-            width: 100%;
-            padding: 12px;
-            background-color: #333;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 8px;
-            margin-top: 20px;
-            cursor: pointer;
+        /* New Data Dashboard Style */
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            margin: 20px 0; padding: 15px; background: #252525; border-radius: 12px;
         }
+        .stat-item { display: flex; flex-direction: column; font-size: 13px; color: #aaa; }
+        .stat-value { font-size: 16px; color: #fff; font-weight: bold; margin-top: 4px; }
+
+        #status-icon { font-size: 70px; margin: 10px 0; }
+        h1 { margin: 0; font-size: 20px; color: #eee; }
+        h2 { font-size: 16px; margin-top: 25px; color: #4caf50; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        
+        .hours-list { list-style: none; padding: 0; margin-top: 10px; text-align: left; }
+        .hour-item {
+            background-color: #2c2c2c; margin: 8px 0; padding: 12px;
+            border-radius: 10px; display: flex; flex-direction: column; gap: 4px;
+        }
+        .hour-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; }
+        .btn-update { width: 100%; padding: 12px; background-color: #333; color: #fff; border: 1px solid #444; border-radius: 8px; margin-top: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -117,26 +63,31 @@
     <div id="sideMenu" class="side-menu">
         <button class="close-btn" onclick="toggleMenu()">✕</button>
         <h3>Settings</h3>
-        <p style="font-size: 12px; color: #888;">Manage your application data.</p>
-        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
         <button onclick="nukeCache()" class="btn-update">Force Update App</button>
-        <p style="font-size: 10px; color: #555; margin-top: 10px; text-align: center;">V 1.0.2</p>
     </div>
 
     <div class="container">
-        <h1>Tonight's Conditions</h1>
-        <div id="status-icon" class="loading">⏳</div>
-        <p id="status-text" style="color: #ccc;">Checking the skies...</p>
-        <ul id="hours-list" class="hours-list"></ul>
+        <h1 id="header-title">Astro Conditions</h1>
+        
+        <div id="status-icon">⏳</div>
+        <p id="status-text" style="font-weight: bold;">Loading forecast...</p>
+
+        <div class="stats-grid" id="current-stats" style="display:none;">
+            <div class="stat-item">Cloud Cover<div class="stat-value" id="val-clouds">--</div></div>
+            <div class="stat-item">Moon Phase<div class="stat-value" id="val-moon">--</div></div>
+            <div class="stat-item">Illumination<div class="stat-value" id="val-illum">--</div></div>
+            <div class="stat-item">Next Window<div class="stat-value" id="val-window">--</div></div>
+        </div>
+
+        <div id="forecast-section" style="display:none;">
+            <h2>Clear Windows</h2>
+            <ul id="hours-list" class="hours-list"></ul>
+        </div>
     </div>
 
     <script>
-        // --- UI LOGIC ---
-        function toggleMenu() {
-            document.getElementById('sideMenu').classList.toggle('active');
-        }
+        function toggleMenu() { document.getElementById('sideMenu').classList.toggle('active'); }
 
-        // --- CACHE MANAGEMENT ---
         async function nukeCache() {
             if ('serviceWorker' in navigator) {
                 const registrations = await navigator.serviceWorker.getRegistrations();
@@ -146,11 +97,9 @@
                 const keys = await caches.keys();
                 for (let key of keys) { await caches.delete(key); }
             }
-            alert("App updated! Reloading...");
             window.location.href = window.location.pathname + '?v=' + new Date().getTime();
         }
 
-        // --- WEATHER LOGIC ---
         const LAT = 42.37;
         const LON = -83.47;
         const CLOUD_THRESHOLD = 30; 
@@ -165,28 +114,25 @@
             if (phase < 0) phase += 1;
             const illumination = Math.round((1 - Math.cos(phase * 2 * Math.PI)) / 2 * 100);
             
-            let phaseName = "";
-            if (phase < 0.03 || phase > 0.97) phaseName = "🌑 New Moon";
-            else if (phase < 0.22) phaseName = "🌒 Waxing Crescent";
-            else if (phase < 0.28) phaseName = "🌓 First Quarter";
-            else if (phase < 0.47) phaseName = "🌔 Waxing Gibbous";
-            else if (phase < 0.53) phaseName = "🌕 Full Moon";
-            else if (phase < 0.72) phaseName = "🌖 Waning Gibbous";
-            else if (phase < 0.78) phaseName = "🌗 Last Quarter";
-            else phaseName = "🌘 Waning Crescent";
-
-            return { phaseName, illumination };
+            let name = "";
+            if (phase < 0.03 || phase > 0.97) name = "New Moon";
+            else if (phase < 0.22) name = "Waxing Crescent";
+            else if (phase < 0.28) name = "First Quarter";
+            else if (phase < 0.47) name = "Waxing Gibbous";
+            else if (phase < 0.53) name = "Full Moon";
+            else if (phase < 0.72) name = "Waning Gibbous";
+            else if (phase < 0.78) name = "Last Quarter";
+            else name = "Waning Crescent";
+            return { name, illumination };
         }
 
         async function fetchAstroData() {
             try {
                 const response = await fetch(OPEN_METEO_URL);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 processForecast(data);
             } catch (err) {
-                document.getElementById('status-icon').innerText = "🛑";
-                document.getElementById('status-text').innerText = "Network Error: Check connection.";
+                document.getElementById('status-text').innerText = "Connection Error";
             }
         }
 
@@ -196,18 +142,24 @@
             const clouds = data.hourly.cloud_cover;
             const now = new Date();
             
+            // Get Current Stats for the Dashboard
+            const currentClouds = clouds[0]; 
+            const currentMoon = getMoonData(now);
+
+            document.getElementById('val-clouds').innerText = currentClouds + "%";
+            document.getElementById('val-moon').innerText = currentMoon.name;
+            document.getElementById('val-illum').innerText = currentMoon.illumination + "%";
+            document.getElementById('current-stats').style.display = 'grid';
+
             for (let i = 0; i < times.length; i++) {
                 const hourTime = new Date(times[i]);
                 if (hourTime >= now && hourTime < new Date(now.getTime() + 24 * 60 * 60 * 1000)) {
-                    const hourOfDay = hourTime.getHours();
-                    const isDark = hourOfDay >= 20 || hourOfDay <= 5;
-                    if (isDark && clouds[i] <= CLOUD_THRESHOLD) {
-                        const moon = getMoonData(hourTime);
+                    const hr = hourTime.getHours();
+                    if ((hr >= 20 || hr <= 5) && clouds[i] <= CLOUD_THRESHOLD) {
                         clearHours.push({
                             time: hourTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                            cloudCover: clouds[i],
-                            moonPhase: moon.phaseName,
-                            moonIllum: moon.illumination
+                            cloud: clouds[i],
+                            moon: getMoonData(hourTime)
                         });
                     }
                 }
@@ -216,30 +168,35 @@
             const icon = document.getElementById('status-icon');
             const text = document.getElementById('status-text');
             const list = document.getElementById('hours-list');
+            const forecastSection = document.getElementById('forecast-section');
+            
             list.innerHTML = ''; 
 
             if (clearHours.length > 0) {
                 icon.innerText = "👍";
                 icon.style.color = "#4caf50";
-                text.innerText = "Prime stargazing conditions:";
+                text.innerText = "Skies are Dark & Clear";
+                document.getElementById('val-window').innerText = clearHours[0].time;
+                forecastSection.style.display = 'block';
+                
                 clearHours.forEach(h => {
                     const li = document.createElement('li');
                     li.className = 'hour-item';
                     li.innerHTML = `
-                        <div class="hour-header"><span class="good-time">${h.time}</span><span style="font-size:12px; color:#888;">${h.moonPhase}</span></div>
-                        <div class="conditions-row">☁️ Clouds: ${h.cloudCover}% | 🌙 Illum: ${h.moonIllum}%</div>`;
+                        <div class="hour-header"><span>${h.time}</span><span style="color:#888; font-size:12px;">${h.moon.name}</span></div>
+                        <div style="font-size:13px; color:#aaa;">☁️ Clouds: ${h.cloud}% | 🌙 Illum: ${h.moon.illumination}%</div>`;
                     list.appendChild(li);
                 });
             } else {
                 icon.innerText = "👎";
                 icon.style.color = "#f44336";
-                text.innerText = "Skies are too cloudy tonight.";
+                text.innerText = "Conditions Suboptimal";
+                document.getElementById('val-window').innerText = "None";
+                forecastSection.style.display = 'none';
             }
         }
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js');
-        }
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
         fetchAstroData();
     </script>
 </body>
