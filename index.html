@@ -5,127 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wills Astro App</title>
 
-    <link rel="manifest" href="./manifest.json?v=7">
+    <link rel="manifest" href="./manifest.json">
 
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #121212;
             color: #ffffff;
+            margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             min-height: 100vh;
-            margin: 0;
-            padding: 20px;
         }
+
+        /* Top Bar & Menu Styles */
+        .top-bar {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+            transition: color 0.3s;
+        }
+
+        .menu-btn:hover { color: #fff; }
+
+        /* Hidden Side Menu */
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -250px;
+            width: 250px;
+            height: 100%;
+            background-color: #1e1e1e;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .side-menu.active { right: 0; }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px;
+            float: right;
+            cursor: pointer;
+        }
+
+        /* App Content */
         .container {
             background-color: #1e1e1e;
             padding: 40px;
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             text-align: center;
-            max-width: 450px;
-            width: 100%;
-        }
-        #status-icon {
-            font-size: 100px;
-            margin: 20px 0;
-            line-height: 1;
-        }
-        h1 {
-            margin-top: 0;
-            font-size: 24px;
-        }
-        .hours-list {
-            list-style: none;
-            padding: 0;
+            max-width: 400px;
+            width: 90%;
             margin-top: 20px;
-            text-align: left;
         }
+
+        #status-icon { font-size: 80px; margin: 20px 0; }
+        h1 { margin: 0; font-size: 22px; color: #eee; }
+        
+        .hours-list { list-style: none; padding: 0; margin-top: 20px; text-align: left; }
         .hour-item {
             background-color: #2c2c2c;
             margin: 10px 0;
-            padding: 14px 18px;
-            border-radius: 8px;
+            padding: 14px;
+            border-radius: 12px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
-        .hour-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 18px;
-            border-bottom: 1px solid #444;
-            padding-bottom: 6px;
-        }
-        .conditions-row {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            font-size: 14px;
-            color: #cccccc;
-        }
-        .good-time {
-            color: #4caf50;
-            font-weight: bold;
-        }
-        .loading {
-            color: #aaaaaa;
-            font-style: italic;
-        }
-        .controls-container {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
+        .hour-header { display: flex; justify-content: space-between; font-weight: bold; }
+        .conditions-row { font-size: 14px; color: #aaa; }
+        .good-time { color: #4caf50; }
+
+        /* Utility Buttons */
+        .btn-update {
+            width: 100%;
+            padding: 12px;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #444;
             border-radius: 8px;
-            font-weight: bold;
+            margin-top: 20px;
             cursor: pointer;
         }
-        .btn-update { background-color: #444; color: white; }
-        .btn-install { background-color: #2196F3; color: white; display: none; }
     </style>
 </head>
 <body>
 
+    <div class="top-bar">
+        <button class="menu-btn" onclick="toggleMenu()">⚙️</button>
+    </div>
+
+    <div id="sideMenu" class="side-menu">
+        <button class="close-btn" onclick="toggleMenu()">✕</button>
+        <h3>Settings</h3>
+        <p style="font-size: 12px; color: #888;">Manage your application data.</p>
+        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+        <button onclick="nukeCache()" class="btn-update">Force Update App</button>
+        <p style="font-size: 10px; color: #555; margin-top: 10px; text-align: center;">V 1.0.2</p>
+    </div>
+
     <div class="container">
         <h1>Tonight's Conditions</h1>
-
-        <div class="controls-container">
-            <button onclick="nukeCache()" class="btn btn-update">Force Update</button>
-            <button id="install-button" class="btn btn-install">📲 Install App</button>
-        </div>
-
         <div id="status-icon" class="loading">⏳</div>
-        <p id="status-text">Checking the skies...</p>
-
+        <p id="status-text" style="color: #ccc;">Checking the skies...</p>
         <ul id="hours-list" class="hours-list"></ul>
     </div>
 
     <script>
-        window.addEventListener('error', function(e) {
-            document.getElementById('status-icon').innerText = "🛑";
-            document.getElementById('status-text').innerText = "Code Error: " + e.message;
-        });
-        window.addEventListener('unhandledrejection', function(e) {
-            document.getElementById('status-icon').innerText = "🛑";
-            document.getElementById('status-text').innerText = "Network Error: " + (e.reason || "Failed to load data.");
-        });
-    </script>
-
-    <script>
-        // 1. Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js');
+        // --- UI LOGIC ---
+        function toggleMenu() {
+            document.getElementById('sideMenu').classList.toggle('active');
         }
 
-        // 2. Cache Clearing Logic
+        // --- CACHE MANAGEMENT ---
         async function nukeCache() {
             if ('serviceWorker' in navigator) {
                 const registrations = await navigator.serviceWorker.getRegistrations();
@@ -135,39 +146,11 @@
                 const keys = await caches.keys();
                 for (let key of keys) { await caches.delete(key); }
             }
-            alert("Old cache wiped! Downloading the fresh version now...");
+            alert("App updated! Reloading...");
             window.location.href = window.location.pathname + '?v=' + new Date().getTime();
         }
 
-        // 3. Custom Install Prompt Logic
-        let deferredPrompt;
-        const installButton = document.getElementById('install-button');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent Chrome from showing its own mini-infobar
-            e.preventDefault();
-            // Stash the event so we can trigger it later
-            deferredPrompt = e;
-            // Un-hide our custom install button
-            installButton.style.display = 'block';
-        });
-
-        installButton.addEventListener('click', async () => {
-            if (deferredPrompt !== null) {
-                // Show the actual Android install prompt
-                deferredPrompt.prompt();
-                // Wait for the user to respond to the prompt
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
-                    installButton.style.display = 'none';
-                }
-                // We've used the prompt, and can't use it again, throw it away
-                deferredPrompt = null;
-            }
-        });
-
-        // 4. Weather App Logic
+        // --- WEATHER LOGIC ---
         const LAT = 42.37;
         const LON = -83.47;
         const CLOUD_THRESHOLD = 30; 
@@ -180,7 +163,6 @@
             const days = diff / (1000 * 60 * 60 * 24);
             let phase = (days % synodicMonth) / synodicMonth;
             if (phase < 0) phase += 1;
-            
             const illumination = Math.round((1 - Math.cos(phase * 2 * Math.PI)) / 2 * 100);
             
             let phaseName = "";
@@ -197,10 +179,15 @@
         }
 
         async function fetchAstroData() {
-            const response = await fetch(OPEN_METEO_URL);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.json();
-            processForecast(data);
+            try {
+                const response = await fetch(OPEN_METEO_URL);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                processForecast(data);
+            } catch (err) {
+                document.getElementById('status-icon').innerText = "🛑";
+                document.getElementById('status-text').innerText = "Network Error: Check connection.";
+            }
         }
 
         function processForecast(data) {
@@ -211,63 +198,48 @@
             
             for (let i = 0; i < times.length; i++) {
                 const hourTime = new Date(times[i]);
-                
                 if (hourTime >= now && hourTime < new Date(now.getTime() + 24 * 60 * 60 * 1000)) {
                     const hourOfDay = hourTime.getHours();
                     const isDark = hourOfDay >= 20 || hourOfDay <= 5;
-                    const cloudCoverPercent = clouds[i];
-
-                    if (isDark && cloudCoverPercent <= CLOUD_THRESHOLD) {
-                        const timeString = hourTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        const moonData = getMoonData(hourTime);
-                        
+                    if (isDark && clouds[i] <= CLOUD_THRESHOLD) {
+                        const moon = getMoonData(hourTime);
                         clearHours.push({
-                            time: timeString,
-                            cloudCover: cloudCoverPercent,
-                            moonPhase: moonData.phaseName,
-                            moonIllum: moonData.illumination
+                            time: hourTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            cloudCover: clouds[i],
+                            moonPhase: moon.phaseName,
+                            moonIllum: moon.illumination
                         });
                     }
                 }
             }
 
-            const iconElement = document.getElementById('status-icon');
-            const textElement = document.getElementById('status-text');
-            const listElement = document.getElementById('hours-list');
-            listElement.innerHTML = ''; 
+            const icon = document.getElementById('status-icon');
+            const text = document.getElementById('status-text');
+            const list = document.getElementById('hours-list');
+            list.innerHTML = ''; 
 
             if (clearHours.length > 0) {
-                iconElement.innerText = "👍";
-                iconElement.style.color = "#4caf50";
-                
-                const maxIllum = Math.max(...clearHours.map(h => h.moonIllum));
-                if (maxIllum > 75) {
-                    textElement.innerText = "Skies are clear! However, a bright Moon might wash out faint targets. Best hours:";
-                } else {
-                    textElement.innerText = "Skies are dark and clear! Prime shooting hours:";
-                }
-
-                clearHours.forEach(hour => {
+                icon.innerText = "👍";
+                icon.style.color = "#4caf50";
+                text.innerText = "Prime stargazing conditions:";
+                clearHours.forEach(h => {
                     const li = document.createElement('li');
                     li.className = 'hour-item';
                     li.innerHTML = `
-                        <div class="hour-header">
-                            <span class="good-time">${hour.time}</span>
-                            <span style="font-size: 14px; color: #aaa;">${hour.moonPhase} (${hour.moonIllum}%)</span>
-                        </div>
-                        <div class="conditions-row">
-                            <span>☁️ Cloud Cover: ${hour.cloudCover}%</span>
-                        </div>
-                    `;
-                    listElement.appendChild(li);
+                        <div class="hour-header"><span class="good-time">${h.time}</span><span style="font-size:12px; color:#888;">${h.moonPhase}</span></div>
+                        <div class="conditions-row">☁️ Clouds: ${h.cloudCover}% | 🌙 Illum: ${h.moonIllum}%</div>`;
+                    list.appendChild(li);
                 });
             } else {
-                iconElement.innerText = "👎";
-                iconElement.style.color = "#f44336";
-                textElement.innerText = "Not looking great tonight. Too much cloud cover.";
+                icon.innerText = "👎";
+                icon.style.color = "#f44336";
+                text.innerText = "Skies are too cloudy tonight.";
             }
         }
 
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
         fetchAstroData();
     </script>
 </body>
