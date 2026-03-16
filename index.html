@@ -10,7 +10,6 @@
         .top-bar { width: 100%; display: flex; justify-content: flex-end; }
         .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #ffd700; z-index: 10; }
         
-        /* Container acts as our screen wrapper */
         .screen-container { max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 10px; padding-bottom: 50px; }
         
         .box { background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); text-align: center; }
@@ -20,7 +19,6 @@
         .stat-item { background: #252525; padding: 12px; border-radius: 10px; font-size: 11px; color: #888; text-transform: uppercase; }
         .stat-value { color: #fff; font-weight: bold; font-size: 14px; margin-top: 4px; }
         
-        /* Targets & Scanning */
         .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; animation: fadeIn 0.3s ease; cursor: pointer; transition: 0.2s; }
         .target-card:active { transform: scale(0.98); }
         .target-card.completed { border-color: #4caf50; background: #1a2e1d; }
@@ -89,7 +87,6 @@
     </div>
 
     <script>
-        // --- Core App Logic ---
         let lat = localStorage.getItem('astroLat') || 42.37;
         let lon = localStorage.getItem('astroLon') || -83.47;
         let city = localStorage.getItem('astroCity') || "Plymouth, MI";
@@ -120,7 +117,6 @@
             });
         }
 
-        // --- Navigation Logic ---
         function openLogbook() {
             document.getElementById('sideMenu').style.display = 'none';
             document.getElementById('screen-dashboard').style.display = 'none';
@@ -135,7 +131,6 @@
             renderScannedTargets();
         }
 
-        // --- Weather & Astro Logic ---
         function getMoonData(date) {
             const synodic = 29.53;
             const knownNew = new Date(Date.UTC(2000, 0, 6, 18, 14, 0)).getTime();
@@ -172,7 +167,6 @@
             } catch (e) { document.getElementById('status-text').innerText = "Network Error"; }
         }
 
-        // --- Target Database ---
         const ALL_TARGETS = [
             { id: "M-51", name: "Whirlpool Galaxy", type: "Spiral", season: [2,3,4,5] },
             { id: "M-81", name: "Bode's Galaxy", type: "Spiral", season: [1,2,3,4] },
@@ -199,13 +193,12 @@
         function toggleTarget(id) {
             let completed = getCompleted();
             if (completed.includes(id)) {
-                completed = completed.filter(t => t !== id); // Uncheck
+                completed = completed.filter(t => t !== id);
             } else {
-                completed.push(id); // Check
+                completed.push(id);
             }
             localStorage.setItem('astroLogbook', JSON.stringify(completed));
             
-            // Re-render whichever screen is currently active
             if (document.getElementById('screen-logbook').style.display === 'flex') {
                 renderFullChecklist();
             } else {
@@ -222,7 +215,6 @@
             renderScannedTargets();
         }
 
-        // Renders the 2 targets on the Dashboard
         function renderScannedTargets() {
             const completed = getCompleted();
             document.getElementById('targets-list').innerHTML = currentScan.map(t => {
@@ -239,7 +231,6 @@
             }).join('');
         }
 
-        // Renders the entire database in the Logbook screen
         function renderFullChecklist() {
             const completed = getCompleted();
             document.getElementById('full-progress').innerText = `${completed.length} / ${ALL_TARGETS.length} Targets Captured`;
@@ -250,7 +241,7 @@
                     <div class="target-card ${isDone ? 'completed' : ''}" onclick="toggleTarget('${t.id}')">
                         <div style="display:flex; justify-content:space-between;">
                             <div style="font-size:10px; color:${isDone ? '#888' : '#888'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
-                            <div style="font-size:16px;">${is brightness ? '✅' : '🤍'}</div>
+                            <div style="font-size:16px;">${isDone ? '✅' : '🤍'}</div>
                         </div>
                         <div class="target-name">${t.name}</div>
                     </div>
@@ -261,7 +252,7 @@
         function resetProgress() {
             if(confirm("Are you sure you want to clear your Logbook?")) {
                 localStorage.removeItem('astroLogbook');
-                scanTargets(); // Pick 2 fresh ones
+                scanTargets();
                 updateProgress();
                 document.getElementById('sideMenu').style.display = 'none';
             }
