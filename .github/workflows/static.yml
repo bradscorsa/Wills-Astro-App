@@ -14,25 +14,21 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
-# Opt-in to the future as requested by the warning
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   deploy:
     environment:
       name: github-pages
-      url: ${{ steps: deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4 # Updated
+        uses: actions/checkout@v4
       - name: Setup Pages
-        uses: actions/configure-pages@v5 # Updated
+        uses: actions/configure-pages@v5
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3 # Updated
+        uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 # Keep v4 as it's the stable standard for now
+        uses: actions/deploy-pages@v4
