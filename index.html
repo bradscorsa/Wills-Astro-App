@@ -10,45 +10,47 @@
         .top-bar { width: 100%; display: flex; justify-content: flex-end; }
         .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #ffd700; }
         .container { max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
-        .box { background: #1e1e1e; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; text-align: left; }
-        .stat-item { background: #252525; padding: 10px; border-radius: 8px; font-size: 12px; color: #aaa; }
+        .box { background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); text-align: center; }
+        .location-label { color: #4caf50; font-weight: bold; font-size: 14px; }
+        .coord-label { font-size: 10px; color: #666; font-family: monospace; margin-top: 4px; display: block; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; text-align: left; }
+        .stat-item { background: #252525; padding: 12px; border-radius: 10px; font-size: 11px; color: #888; text-transform: uppercase; }
         .stat-value { color: #fff; font-weight: bold; font-size: 14px; margin-top: 4px; }
-        .target-card { background: #252525; border-radius: 10px; margin-bottom: 10px; overflow: hidden; text-align: left; border: 1px solid #333; }
-        .target-info { padding: 10px; }
-        .target-name { color: #4caf50; font-weight: bold; }
+        .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; }
+        .target-name { color: #4caf50; font-weight: bold; font-size: 15px; }
         .btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        #status-icon { font-size: 60px; margin: 10px; }
+        #status-icon { font-size: 70px; margin: 15px 0; }
     </style>
 </head>
 <body>
     <div class="top-bar"><button class="menu-btn" onclick="document.getElementById('sideMenu').style.display='block'">✨</button></div>
 
-    <div id="sideMenu" style="display:none; position:fixed; top:0; right:0; width:250px; height:100%; background:#1e1e1e; z-index:100; padding:20px; box-shadow:-2px 0 10px #000;">
-        <button onclick="this.parentElement.style.display='none'" style="color:#888; background:none; border:none; float:right;">✕</button>
-        <h3>Settings</h3>
-        <button class="btn" style="background:#2196F3; color:#fff;" onclick="getGPS()">🛰️ GPS Sync</button>
-        <button class="btn" style="background:#444; color:#fff;" onclick="nukeCache()">Force Update</button>
+    <div id="sideMenu" style="display:none; position:fixed; top:0; right:0; width:260px; height:100%; background:#1e1e1e; z-index:100; padding:25px; box-shadow:-5px 0 20px #000;">
+        <button onclick="this.parentElement.style.display='none'" style="color:#888; background:none; border:none; float:right; font-size:20px;">✕</button>
+        <h3 style="margin-top:0;">Observatory Settings</h3>
+        <button class="btn" style="background:#2196F3; color:#fff;" onclick="getGPS()">🛰️ GPS Precision Sync</button>
+        <button class="btn" style="background:#333; color:#888; border:1px solid #444; margin-top:40px;" onclick="nukeCache()">Force App Update</button>
     </div>
 
     <div class="container">
         <div class="box">
-            <div id="display-city" style="color:#4caf50; font-weight:bold;">Plymouth, MI</div>
+            <div class="location-label" id="display-city">Plymouth, MI</div>
+            <span class="coord-label" id="display-coords">42.3700°N, 83.4700°W</span>
             <div id="status-icon">⏳</div>
-            <div id="status-text">Loading...</div>
+            <div id="status-text" style="font-weight:bold; font-size:18px;">Analyzing Skies...</div>
         </div>
 
         <div class="box">
             <div class="stats-grid">
-                <div class="stat-item">Clouds<div class="stat-value" id="val-clouds">--</div></div>
-                <div class="stat-item">Moon<div class="stat-value" id="val-moon">--</div></div>
-                <div class="stat-item">Moon Light<div class="stat-value" id="val-illum">--</div></div>
-                <div class="stat-item">Next Clear<div class="stat-value" id="val-window">--</div></div>
+                <div class="stat-item">Sky Overcast<div class="stat-value" id="val-clouds">--</div></div>
+                <div class="stat-item">Moon Phase<div class="stat-value" id="val-moon">--</div></div>
+                <div class="stat-item">Moon Brightness<div class="stat-value" id="val-illum">--</div></div>
+                <div class="stat-item">Next Clear Night<div class="stat-value" id="val-window" style="color:#4caf50;">--</div></div>
             </div>
         </div>
 
         <div class="box">
-            <h3 style="margin-top:0;">Suggested Targets</h3>
+            <h3 style="margin-top:0; font-size:16px; color:#eee;">Suggested Targets</h3>
             <div id="targets-list"></div>
         </div>
     </div>
@@ -70,9 +72,15 @@
             navigator.geolocation.getCurrentPosition(async (p) => {
                 lat = p.coords.latitude.toFixed(4);
                 lon = p.coords.longitude.toFixed(4);
-                const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
-                const d = await res.json();
-                city = d.city || d.locality || "Unknown";
+                try {
+                    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+                    const d = await res.json();
+                    // Grab neighborhood/locality first for precision
+                    let localName = d.locality || d.city || "Unknown Spot";
+                    let state = d.principalSubdivisionCode ? d.principalSubdivisionCode.split('-')[1] : "";
+                    city = state ? `${localName}, ${state}` : localName;
+                } catch (e) { city = "GPS Location"; }
+                
                 localStorage.setItem('astroLat', lat);
                 localStorage.setItem('astroLon', lon);
                 localStorage.setItem('astroCity', city);
@@ -80,32 +88,61 @@
             });
         }
 
-        function updateTargets() {
-            const list = [
-                { name: "M-51 Whirlpool Galaxy", desc: "Face-on spiral galaxy." },
-                { name: "M-81 Bode's Galaxy", desc: "Grand design spiral." }
-            ];
-            document.getElementById('targets-list').innerHTML = list.map(t => `
-                <div class="target-card"><div class="target-info"><div class="target-name">${t.name}</div><div style="font-size:12px; color:#aaa;">${t.desc}</div></div></div>
-            `).join('');
+        function getMoonData(date) {
+            const synodic = 29.53;
+            const knownNew = new Date(Date.UTC(2000, 0, 6, 18, 14, 0)).getTime();
+            let phase = ((date.getTime() - knownNew) / (1000 * 60 * 60 * 24) % synodic) / synodic;
+            if (phase < 0) phase += 1;
+            const illumination = Math.round((1 - Math.cos(phase * 2 * Math.PI)) / 2 * 100);
+            const names = ["New Moon", "Waxing Crescent", "First Quarter", "Waxing Gibbous", "Full Moon", "Waning Gibbous", "Last Quarter", "Waning Crescent"];
+            return { name: names[Math.floor(phase * 8) % 8], illum: illumination };
         }
 
         async function fetchData() {
             document.getElementById('display-city').innerText = city;
+            document.getElementById('display-coords').innerText = `${Math.abs(lat)}°${lat >= 0 ? 'N':'S'}, ${Math.abs(lon)}°${lon >= 0 ? 'E':'W'}`;
+            
             try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover&timezone=auto&forecast_days=1`);
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover&timezone=auto&forecast_days=8`);
                 const d = await res.json();
+                
+                const now = new Date();
+                const moon = getMoonData(now);
+                
                 document.getElementById('val-clouds').innerText = d.hourly.cloud_cover[0] + "%";
+                document.getElementById('val-moon').innerText = moon.name;
+                document.getElementById('val-illum').innerText = moon.illum + "%";
+                
+                // Find next clear window
+                let nextClear = "None in 7 days";
+                for(let i=0; i<d.hourly.time.length; i++) {
+                    const hTime = new Date(d.hourly.time[i]);
+                    const hr = hTime.getHours();
+                    if (hTime >= now && (hr >= 20 || hr <= 5) && d.hourly.cloud_cover[i] <= 30) {
+                        nextClear = (hTime < new Date(now.getTime() + 86400000)) ? "Tonight" : hTime.toLocaleDateString(undefined, {weekday:'short', day:'numeric'});
+                        break;
+                    }
+                }
+                document.getElementById('val-window').innerText = nextClear;
                 document.getElementById('status-icon').innerText = d.hourly.cloud_cover[0] < 30 ? "👍" : "👎";
-                document.getElementById('status-text').innerText = d.hourly.cloud_cover[0] < 30 ? "Clear Skies" : "Cloudy";
-                // Simplified Moon for safety
-                document.getElementById('val-moon').innerText = "Waning";
-                document.getElementById('val-illum').innerText = "15%";
-                document.getElementById('val-window').innerText = "Tonight";
-            } catch (e) { document.getElementById('status-text').innerText = "Error loading data"; }
+                document.getElementById('status-icon').style.color = d.hourly.cloud_cover[0] < 30 ? "#4caf50" : "#f44336";
+                document.getElementById('status-text').innerText = d.hourly.cloud_cover[0] < 30 ? "Tonight is Clear" : "Cloudy Skies";
+
+            } catch (e) { document.getElementById('status-text').innerText = "Network Error"; }
         }
 
-        updateTargets();
+        const list = [
+            { name: "M-51 Whirlpool Galaxy", type: "Spiral", desc: "Face-on neighbor galaxy." },
+            { name: "M-81 Bode's Galaxy", type: "Spiral", desc: "Bright galaxy in Ursa Major." }
+        ];
+        document.getElementById('targets-list').innerHTML = list.map(t => `
+            <div class="target-card">
+                <div style="font-size:10px; color:#888; text-transform:uppercase;">${t.type}</div>
+                <div class="target-name">${t.name}</div>
+                <div style="font-size:12px; color:#aaa; margin-top:4px;">${t.desc}</div>
+            </div>
+        `).join('');
+
         fetchData();
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
     </script>
