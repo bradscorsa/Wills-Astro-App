@@ -313,46 +313,24 @@
             }
         }
 
-        function renderAstrospheric(data, timeObj) {
-            if(data && data.Astrospheric_Seeing && data.Astrospheric_Seeing.length > 0) {
+       function renderAstrospheric(data, timeObj) {
+            try {
+                // Grab the raw packages for the current hour
+                let seeingRaw = data.Astrospheric_Seeing[0];
+                let transRaw = data.Astrospheric_Transparency[0];
                 
-                // X-Ray Extractor: Tears open the object if it's hiding the number!
-                const getVal = (obj) => {
-                    if (typeof obj !== 'object') return obj;
-                    if (obj === null) return "null";
-                    if (obj.Value !== undefined) return obj.Value;
-                    if (obj.value !== undefined) return obj.value;
-                    if (obj.v !== undefined) return obj.v;
-                    if (obj.raw !== undefined) return obj.raw;
-                    return JSON.stringify(obj); 
-                };
-
-                const rawSeeing = getVal(data.Astrospheric_Seeing[0]);
-                const seeingMap = {0:"Cloudy", 1:"Poor", 2:"Below Avg", 3:"Average", 4:"Above Avg", 5:"Excellent"};
-                
-                document.getElementById('val-seeing').innerText = seeingMap[rawSeeing] || rawSeeing;
-                
-                const rawTrans = getVal(data.Astrospheric_Transparency[0]);
-                let tStr = rawTrans; // Default to X-Ray if math fails
-                
-                // Check if we successfully grabbed a number, then map it
-                if (typeof rawTrans === 'number' || !isNaN(rawTrans)) {
-                    const tCode = parseFloat(rawTrans);
-                    if(tCode <= 5) tStr = "Excellent";
-                    else if(tCode <= 9) tStr = "Above Avg";
-                    else if(tCode <= 13) tStr = "Average";
-                    else if(tCode <= 23) tStr = "Below Avg";
-                    else if(tCode <= 27) tStr = "Poor";
-                    else tStr = "Cloudy";
-                }
-                
-                document.getElementById('val-trans').innerText = tStr;
+                // Force pure stringification onto the screen. NO MATH. NO MAPPING.
+                document.getElementById('val-seeing').innerText = JSON.stringify(seeingRaw);
+                document.getElementById('val-trans').innerText = JSON.stringify(transRaw);
                 
                 const timeStr = timeObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                document.getElementById('pro-sync-time').innerText = `Data Synced: ${timeStr}`;
+                document.getElementById('pro-sync-time').innerText = `X-RAY SUCCESS: ${timeStr}`;
+                
+            } catch(e) {
+                // If it fails, print the exact error message
+                document.getElementById('pro-sync-time').innerText = "Render Error: " + e.message;
             }
         }
-
         // --- Open-Meteo Weather ---
         async function fetchData() {
             document.getElementById('display-city').innerText = city;
