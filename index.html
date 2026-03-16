@@ -9,16 +9,23 @@
         body { font-family: sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .top-bar { width: 100%; display: flex; justify-content: flex-end; }
         .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #ffd700; }
-        .container { max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        .container { max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 20px; padding-bottom: 50px;}
         .box { background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); text-align: center; }
         .location-label { color: #4caf50; font-weight: bold; font-size: 14px; }
         .coord-label { font-size: 10px; color: #666; font-family: monospace; margin-top: 4px; display: block; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; text-align: left; }
         .stat-item { background: #252525; padding: 12px; border-radius: 10px; font-size: 11px; color: #888; text-transform: uppercase; }
         .stat-value { color: #fff; font-weight: bold; font-size: 14px; margin-top: 4px; }
-        .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; }
+        
+        /* Targets & Scanning */
+        .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .target-name { color: #4caf50; font-weight: bold; font-size: 15px; }
-        .btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        .btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-scan { background: #4caf50; color: #121212; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-scan:active { transform: scale(0.98); background: #81c784; }
+        
         #status-icon { font-size: 70px; margin: 15px 0; }
     </style>
 </head>
@@ -29,7 +36,7 @@
         <button onclick="this.parentElement.style.display='none'" style="color:#888; background:none; border:none; float:right; font-size:20px;">✕</button>
         <h3 style="margin-top:0;">Observatory Settings</h3>
         <button class="btn" style="background:#2196F3; color:#fff;" onclick="getGPS()">🛰️ GPS Precision Sync</button>
-        <button class="btn" style="background:#333; color:#888; border:1px solid #444; margin-top:40px;" onclick="nukeCache()">Force App Update</button>
+        <button class="btn" style="background:#444; color:#fff;" onclick="nukeCache()">Force App Update</button>
     </div>
 
     <div class="container">
@@ -50,7 +57,8 @@
         </div>
 
         <div class="box">
-            <h3 style="margin-top:0; font-size:16px; color:#eee;">Suggested Targets</h3>
+            <h3 style="margin-top:0; font-size:16px; color:#eee;">Target Explorer</h3>
+            <button class="btn btn-scan" onclick="scanTargets()">📡 Scan Deep Space</button>
             <div id="targets-list"></div>
         </div>
     </div>
@@ -75,12 +83,10 @@
                 try {
                     const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
                     const d = await res.json();
-                    // Grab neighborhood/locality first for precision
                     let localName = d.locality || d.city || "Unknown Spot";
                     let state = d.principalSubdivisionCode ? d.principalSubdivisionCode.split('-')[1] : "";
                     city = state ? `${localName}, ${state}` : localName;
                 } catch (e) { city = "GPS Location"; }
-                
                 localStorage.setItem('astroLat', lat);
                 localStorage.setItem('astroLon', lon);
                 localStorage.setItem('astroCity', city);
@@ -101,24 +107,18 @@
         async function fetchData() {
             document.getElementById('display-city').innerText = city;
             document.getElementById('display-coords').innerText = `${Math.abs(lat)}°${lat >= 0 ? 'N':'S'}, ${Math.abs(lon)}°${lon >= 0 ? 'E':'W'}`;
-            
             try {
                 const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover&timezone=auto&forecast_days=8`);
                 const d = await res.json();
-                
                 const now = new Date();
                 const moon = getMoonData(now);
-                
                 document.getElementById('val-clouds').innerText = d.hourly.cloud_cover[0] + "%";
                 document.getElementById('val-moon').innerText = moon.name;
                 document.getElementById('val-illum').innerText = moon.illum + "%";
-                
-                // Find next clear window
                 let nextClear = "None in 7 days";
                 for(let i=0; i<d.hourly.time.length; i++) {
                     const hTime = new Date(d.hourly.time[i]);
-                    const hr = hTime.getHours();
-                    if (hTime >= now && (hr >= 20 || hr <= 5) && d.hourly.cloud_cover[i] <= 30) {
+                    if (hTime >= now && (hTime.getHours() >= 20 || hTime.getHours() <= 5) && d.hourly.cloud_cover[i] <= 30) {
                         nextClear = (hTime < new Date(now.getTime() + 86400000)) ? "Tonight" : hTime.toLocaleDateString(undefined, {weekday:'short', day:'numeric'});
                         break;
                     }
@@ -127,22 +127,39 @@
                 document.getElementById('status-icon').innerText = d.hourly.cloud_cover[0] < 30 ? "👍" : "👎";
                 document.getElementById('status-icon').style.color = d.hourly.cloud_cover[0] < 30 ? "#4caf50" : "#f44336";
                 document.getElementById('status-text').innerText = d.hourly.cloud_cover[0] < 30 ? "Tonight is Clear" : "Cloudy Skies";
-
             } catch (e) { document.getElementById('status-text').innerText = "Network Error"; }
         }
 
-        const list = [
-            { name: "M-51 Whirlpool Galaxy", type: "Spiral", desc: "Face-on neighbor galaxy." },
-            { name: "M-81 Bode's Galaxy", type: "Spiral", desc: "Bright galaxy in Ursa Major." }
+        // --- THE SCANNER LOGIC ---
+        const ALL_TARGETS = [
+            { id: "M-51", name: "Whirlpool Galaxy", type: "Spiral", season: [2,3,4,5] },
+            { id: "M-81", name: "Bode's Galaxy", type: "Spiral", season: [1,2,3,4] },
+            { id: "M-42", name: "Orion Nebula", type: "Nebula", season: [10,11,0,1] },
+            { id: "M-45", name: "The Pleiades", type: "Cluster", season: [9,10,11,0,1,2] },
+            { id: "M-31", name: "Andromeda Galaxy", type: "Spiral", season: [7,8,9,10,11] },
+            { id: "M-13", name: "Hercules Cluster", type: "Globular", season: [4,5,6,7,8] },
+            { id: "M-27", name: "Dumbbell Nebula", type: "Planetary", season: [5,6,7,8,9] },
+            { id: "M-101", name: "Pinwheel Galaxy", type: "Spiral", season: [2,3,4,5,6] },
+            { id: "M-16", name: "Eagle Nebula", type: "Emission", season: [5,6,7,8] }
         ];
-        document.getElementById('targets-list').innerHTML = list.map(t => `
-            <div class="target-card">
-                <div style="font-size:10px; color:#888; text-transform:uppercase;">${t.type}</div>
-                <div class="target-name">${t.name}</div>
-                <div style="font-size:12px; color:#aaa; margin-top:4px;">${t.desc}</div>
-            </div>
-        `).join('');
 
+        function scanTargets() {
+            const currentMonth = new Date().getMonth();
+            const seasonal = ALL_TARGETS.filter(t => t.season.includes(currentMonth));
+            
+            // Randomly shuffle and pick 2
+            const shuffled = seasonal.sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, 2);
+
+            document.getElementById('targets-list').innerHTML = selected.map(t => `
+                <div class="target-card">
+                    <div style="font-size:10px; color:#888; text-transform:uppercase;">${t.type} • ${t.id}</div>
+                    <div class="target-name">${t.name}</div>
+                </div>
+            `).join('');
+        }
+
+        scanTargets();
         fetchData();
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
     </script>
