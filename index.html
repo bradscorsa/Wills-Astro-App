@@ -32,6 +32,9 @@
         .btn-scan:active { transform: scale(0.98); background: #81c784; }
         .btn-nav { background: #333; color: #fff; border: 1px solid #555; margin-bottom: 15px; }
         
+        /* Filter Dropdown Styling */
+        .filter-select { width: 100%; padding: 12px; border-radius: 8px; background: #252525; color: #fff; border: 1px solid #444; margin-bottom: 15px; font-size: 14px; font-weight: bold; outline: none; }
+        
         .progress-text { font-size: 12px; color: #aaa; margin-bottom: 15px; display: block; }
         #status-icon { font-size: 70px; margin: 15px 0; }
     </style>
@@ -70,7 +73,7 @@
 
         <div class="box">
             <h3 style="margin-top:0; font-size:16px; color:#eee; margin-bottom: 5px;">Target Explorer</h3>
-            <span class="progress-text" id="progress-tracker">Logbook: 0 / 9 Captured</span>
+            <span class="progress-text" id="progress-tracker">Logbook: 0 Captured</span>
             <button class="btn btn-scan" onclick="scanTargets()">📡 Scan Deep Space</button>
             <div id="targets-list"></div>
         </div>
@@ -81,7 +84,16 @@
         
         <div class="box" style="padding: 15px;">
             <h2 style="margin-top:5px; color:#4caf50; font-size: 20px;">Master Checklist</h2>
-            <span class="progress-text" id="full-progress">0 / 9 Captured</span>
+            <span class="progress-text" id="full-progress">0 / 131 Captured</span>
+            
+            <select id="category-filter" class="filter-select" onchange="renderFullChecklist()">
+                <option value="all">🌌 All Targets</option>
+                <option value="solar">🪐 Solar System</option>
+                <option value="galaxy">🌀 Galaxies</option>
+                <option value="nebula">☁️ Nebulae</option>
+                <option value="cluster">✨ Star Clusters</option>
+            </select>
+
             <div id="full-checklist-list"></div>
         </div>
     </div>
@@ -167,16 +179,141 @@
             } catch (e) { document.getElementById('status-text').innerText = "Network Error"; }
         }
 
+        const ALL_MODS = [0,1,2,3,4,5,6,7,8,9,10,11];
+
         const ALL_TARGETS = [
-            { id: "M-51", name: "Whirlpool Galaxy", type: "Spiral", season: [2,3,4,5] },
-            { id: "M-81", name: "Bode's Galaxy", type: "Spiral", season: [1,2,3,4] },
-            { id: "M-42", name: "Orion Nebula", type: "Nebula", season: [10,11,0,1] },
-            { id: "M-45", name: "The Pleiades", type: "Cluster", season: [9,10,11,0,1,2] },
-            { id: "M-31", name: "Andromeda Galaxy", type: "Spiral", season: [7,8,9,10,11] },
-            { id: "M-13", name: "Hercules Cluster", type: "Globular", season: [4,5,6,7,8] },
-            { id: "M-27", name: "Dumbbell Nebula", type: "Planetary", season: [5,6,7,8,9] },
-            { id: "M-101", name: "Pinwheel Galaxy", type: "Spiral", season: [2,3,4,5,6] },
-            { id: "M-16", name: "Eagle Nebula", type: "Emission", season: [5,6,7,8] }
+            // Solar System
+            { id: "SYS-1", name: "The Moon", type: "Satellite", season: ALL_MODS },
+            { id: "SYS-2", name: "Venus", type: "Planet", season: ALL_MODS },
+            { id: "SYS-3", name: "Mars", type: "Planet", season: ALL_MODS },
+            { id: "SYS-4", name: "Jupiter", type: "Planet", season: ALL_MODS },
+            { id: "SYS-5", name: "Saturn", type: "Planet", season: ALL_MODS },
+            { id: "SYS-6", name: "Uranus", type: "Planet", season: ALL_MODS },
+            { id: "SYS-7", name: "Neptune", type: "Planet", season: ALL_MODS },
+            // Best of NGC
+            { id: "NGC-869", name: "Double Cluster (h Persei)", type: "Open Cluster", season: [8,9,10,11,0,1] },
+            { id: "NGC-884", name: "Double Cluster (χ Persei)", type: "Open Cluster", season: [8,9,10,11,0,1] },
+            { id: "NGC-2244", name: "Rosette Nebula", type: "Emission Nebula", season: [11,0,1,2,3] },
+            { id: "NGC-7000", name: "North America Nebula", type: "Emission Nebula", season: [5,6,7,8,9] },
+            { id: "NGC-6960", name: "Western Veil Nebula", type: "Supernova Remnant", season: [6,7,8,9,10] },
+            { id: "NGC-6992", name: "Eastern Veil Nebula", type: "Supernova Remnant", season: [6,7,8,9,10] },
+            { id: "NGC-253", name: "Sculptor Galaxy", type: "Starburst Galaxy", season: [8,9,10,11] },
+            { id: "NGC-4565", name: "Needle Galaxy", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "NGC-2024", name: "Flame Nebula", type: "Emission Nebula", season: [10,11,0,1,2] },
+            { id: "NGC-891", name: "Outer Limits Galaxy", type: "Spiral Galaxy", season: [9,10,11,0,1] },
+            { id: "NGC-457", name: "Owl (ET) Cluster", type: "Open Cluster", season: [8,9,10,11,0] },
+            { id: "NGC-2392", name: "Eskimo Nebula", type: "Planetary Nebula", season: [11,0,1,2,3] },
+            { id: "NGC-6888", name: "Crescent Nebula", type: "Emission Nebula", season: [5,6,7,8,9] },
+            { id: "NGC-7293", name: "Helix Nebula", type: "Planetary Nebula", season: [7,8,9,10] },
+            // Messier Catalog
+            { id: "M-1", name: "Crab Nebula", type: "Supernova Remnant", season: [10,11,0,1,2] },
+            { id: "M-35", name: "Shoe-Buckle Cluster", type: "Open Cluster", season: [11,0,1,2] },
+            { id: "M-36", name: "Pinwheel Cluster", type: "Open Cluster", season: [11,0,1,2] },
+            { id: "M-37", name: "Auriga Salt-and-Pepper", type: "Open Cluster", season: [11,0,1,2] },
+            { id: "M-38", name: "Starfish Cluster", type: "Open Cluster", season: [11,0,1,2] },
+            { id: "M-41", name: "Little Beehive", type: "Open Cluster", season: [11,0,1,2] },
+            { id: "M-42", name: "Orion Nebula", type: "Emission Nebula", season: [10,11,0,1,2] },
+            { id: "M-43", name: "De Mairan's Nebula", type: "Emission Nebula", season: [10,11,0,1,2] },
+            { id: "M-45", name: "The Pleiades", type: "Open Cluster", season: [9,10,11,0,1,2] },
+            { id: "M-46", name: "Puppis Cluster", type: "Open Cluster", season: [11,0,1,2] },
+            { id: "M-47", name: "Puppis Cluster 2", type: "Open Cluster", season: [11,0,1,2] },
+            { id: "M-48", name: "Hydra Cluster", type: "Open Cluster", season: [11,0,1,2] },
+            { id: "M-50", name: "Heart-Shaped Cluster", type: "Open Cluster", season: [11,0,1,2] },
+            { id: "M-78", name: "Casper the Ghost", type: "Reflection Nebula", season: [11,0,1,2] },
+            { id: "M-79", name: "Lepus Globular", type: "Globular Cluster", season: [11,0,1,2] },
+            { id: "M-3", name: "Canes Venatici Cluster", type: "Globular Cluster", season: [2,3,4,5] },
+            { id: "M-40", name: "Winnecke 4", type: "Double Star", season: [2,3,4,5] },
+            { id: "M-44", name: "Beehive Cluster", type: "Open Cluster", season: [1,2,3,4] },
+            { id: "M-49", name: "Virgo Elliptical", type: "Elliptical Galaxy", season: [2,3,4,5] },
+            { id: "M-51", name: "Whirlpool Galaxy", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-53", name: "Coma Globular", type: "Globular Cluster", season: [2,3,4,5] },
+            { id: "M-58", name: "Virgo Spiral", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-59", name: "Virgo Elliptical 2", type: "Elliptical Galaxy", season: [2,3,4,5] },
+            { id: "M-60", name: "Virgo Elliptical 3", type: "Elliptical Galaxy", season: [2,3,4,5] },
+            { id: "M-61", name: "Swelling Spiral", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-63", name: "Sunflower Galaxy", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-64", name: "Black Eye Galaxy", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-65", name: "Leo Triplet 1", type: "Spiral Galaxy", season: [1,2,3,4] },
+            { id: "M-66", name: "Leo Triplet 2", type: "Spiral Galaxy", season: [1,2,3,4] },
+            { id: "M-67", name: "King Cobra Cluster", type: "Open Cluster", season: [1,2,3,4] },
+            { id: "M-68", name: "Hydra Globular", type: "Globular Cluster", season: [2,3,4,5] },
+            { id: "M-81", name: "Bode's Galaxy", type: "Spiral Galaxy", season: [1,2,3,4,5] },
+            { id: "M-82", name: "Cigar Galaxy", type: "Starburst Galaxy", season: [1,2,3,4,5] },
+            { id: "M-83", name: "Southern Pinwheel", type: "Spiral Galaxy", season: [3,4,5] },
+            { id: "M-84", name: "Virgo Lenticular", type: "Lenticular Galaxy", season: [2,3,4,5] },
+            { id: "M-85", name: "Coma Lenticular", type: "Lenticular Galaxy", season: [2,3,4,5] },
+            { id: "M-86", name: "Virgo Lenticular 2", type: "Lenticular Galaxy", season: [2,3,4,5] },
+            { id: "M-87", name: "Virgo A", type: "Elliptical Galaxy", season: [2,3,4,5] },
+            { id: "M-88", name: "Coma Spiral", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-89", name: "Virgo Elliptical 4", type: "Elliptical Galaxy", season: [2,3,4,5] },
+            { id: "M-90", name: "Virgo Spiral 2", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-91", name: "Coma Barred", type: "Barred Spiral", season: [2,3,4,5] },
+            { id: "M-94", name: "Croc's Eye Galaxy", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-95", name: "Leo Barred", type: "Barred Spiral", season: [1,2,3,4] },
+            { id: "M-96", name: "Leo Spiral", type: "Spiral Galaxy", season: [1,2,3,4] },
+            { id: "M-97", name: "Owl Nebula", type: "Planetary Nebula", season: [2,3,4,5] },
+            { id: "M-98", name: "Coma Spiral 2", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-99", name: "Coma Pinwheel", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-100", name: "Blowdryer Galaxy", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-101", name: "Pinwheel Galaxy", type: "Spiral Galaxy", season: [2,3,4,5,6] },
+            { id: "M-104", name: "Sombrero Galaxy", type: "Spiral Galaxy", season: [3,4,5,6] },
+            { id: "M-105", name: "Leo Elliptical", type: "Elliptical Galaxy", season: [1,2,3,4] },
+            { id: "M-106", name: "Canes Venatici Spiral", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-108", name: "Surfboard Galaxy", type: "Spiral Galaxy", season: [2,3,4,5] },
+            { id: "M-109", name: "Ursa Major Barred", type: "Barred Spiral", season: [2,3,4,5] },
+            { id: "M-4", name: "Cat's Eye Globular", type: "Globular Cluster", season: [4,5,6,7] },
+            { id: "M-5", name: "Rose Globular", type: "Globular Cluster", season: [4,5,6,7] },
+            { id: "M-6", name: "Butterfly Cluster", type: "Open Cluster", season: [5,6,7,8] },
+            { id: "M-7", name: "Ptolemy Cluster", type: "Open Cluster", season: [5,6,7,8] },
+            { id: "M-8", name: "Lagoon Nebula", type: "Emission Nebula", season: [5,6,7,8] },
+            { id: "M-9", name: "Ophiuchus Globular", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-10", name: "Ophiuchus Globular 2", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-11", name: "Wild Duck Cluster", type: "Open Cluster", season: [5,6,7,8] },
+            { id: "M-12", name: "Gumball Globular", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-13", name: "Hercules Globular", type: "Globular Cluster", season: [4,5,6,7,8] },
+            { id: "M-14", name: "Ophiuchus Globular 3", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-16", name: "Eagle Nebula", type: "Emission Nebula", season: [5,6,7,8] },
+            { id: "M-17", name: "Omega/Swan Nebula", type: "Emission Nebula", season: [5,6,7,8] },
+            { id: "M-18", name: "Black Swan Cluster", type: "Open Cluster", season: [5,6,7,8] },
+            { id: "M-19", name: "Ophiuchus Globular 4", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-20", name: "Trifid Nebula", type: "Emission Nebula", season: [5,6,7,8] },
+            { id: "M-21", name: "Webb's Cross", type: "Open Cluster", season: [5,6,7,8] },
+            { id: "M-22", name: "Sagittarius Cluster", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-23", name: "Sagittarius Open", type: "Open Cluster", season: [5,6,7,8] },
+            { id: "M-24", name: "Sagittarius Star Cloud", type: "Star Cloud", season: [5,6,7,8] },
+            { id: "M-25", name: "Sagittarius Open 2", type: "Open Cluster", season: [5,6,7,8] },
+            { id: "M-26", name: "Scutum Open", type: "Open Cluster", season: [5,6,7,8] },
+            { id: "M-27", name: "Dumbbell Nebula", type: "Planetary Nebula", season: [5,6,7,8,9,10] },
+            { id: "M-28", name: "Sagittarius Globular", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-29", name: "Cooling Tower Cluster", type: "Open Cluster", season: [6,7,8,9] },
+            { id: "M-39", name: "Cygnus Open", type: "Open Cluster", season: [6,7,8,9] },
+            { id: "M-54", name: "Sagittarius Globular 2", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-55", name: "Summer Rose Star", type: "Globular Cluster", season: [6,7,8] },
+            { id: "M-56", name: "Lyra Globular", type: "Globular Cluster", season: [5,6,7,8,9] },
+            { id: "M-57", name: "Ring Nebula", type: "Planetary Nebula", season: [5,6,7,8,9] },
+            { id: "M-62", name: "Flickering Globular", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-69", name: "Sagittarius Globular 3", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-70", name: "Sagittarius Globular 4", type: "Globular Cluster", season: [5,6,7,8] },
+            { id: "M-71", name: "Sagitta Globular", type: "Globular Cluster", season: [5,6,7,8,9] },
+            { id: "M-72", name: "Aquarius Globular", type: "Globular Cluster", season: [6,7,8,9] },
+            { id: "M-73", name: "Y Cluster", type: "Asterism", season: [6,7,8,9] },
+            { id: "M-75", name: "Sagittarius Globular 5", type: "Globular Cluster", season: [6,7,8,9] },
+            { id: "M-80", name: "Scorpius Globular", type: "Globular Cluster", season: [4,5,6,7] },
+            { id: "M-92", name: "Hercules Globular 2", type: "Globular Cluster", season: [4,5,6,7,8] },
+            { id: "M-107", name: "Crucifix Globular", type: "Globular Cluster", season: [4,5,6,7] },
+            { id: "M-2", name: "Aquarius Globular", type: "Globular Cluster", season: [7,8,9,10] },
+            { id: "M-15", name: "Great Pegasus Cluster", type: "Globular Cluster", season: [7,8,9,10] },
+            { id: "M-30", name: "Capricornus Globular", type: "Globular Cluster", season: [7,8,9,10] },
+            { id: "M-31", name: "Andromeda Galaxy", type: "Spiral Galaxy", season: [7,8,9,10,11] },
+            { id: "M-32", name: "Le Gentil", type: "Elliptical Galaxy", season: [7,8,9,10,11] },
+            { id: "M-33", name: "Triangulum Galaxy", type: "Spiral Galaxy", season: [8,9,10,11,0] },
+            { id: "M-34", name: "Spiral Cluster", type: "Open Cluster", season: [8,9,10,11,0] },
+            { id: "M-52", name: "Scorpion Cluster", type: "Open Cluster", season: [8,9,10,11] },
+            { id: "M-74", name: "Phantom Galaxy", type: "Spiral Galaxy", season: [8,9,10,11,0] },
+            { id: "M-76", name: "Little Dumbbell Nebula", type: "Planetary Nebula", season: [8,9,10,11,0] },
+            { id: "M-77", name: "Cetus A", type: "Spiral Galaxy", season: [9,10,11,0] },
+            { id: "M-103", name: "Cassiopeia Cluster", type: "Open Cluster", season: [8,9,10,11,0] },
+            { id: "M-110", name: "Edward Young Star", type: "Elliptical Galaxy", season: [7,8,9,10,11] }
         ];
 
         let currentScan = [];
@@ -188,6 +325,7 @@
         function updateProgress() {
             const completed = getCompleted();
             document.getElementById('progress-tracker').innerText = `Logbook: ${completed.length} / ${ALL_TARGETS.length} Captured`;
+            document.getElementById('full-progress').innerText = `${completed.length} / ${ALL_TARGETS.length} Total Captured`;
         }
 
         function toggleTarget(id) {
@@ -203,8 +341,8 @@
                 renderFullChecklist();
             } else {
                 renderScannedTargets();
-                updateProgress();
             }
+            updateProgress();
         }
 
         function scanTargets() {
@@ -221,9 +359,9 @@
                 const isDone = completed.includes(t.id);
                 return `
                     <div class="target-card ${isDone ? 'completed' : ''}" onclick="toggleTarget('${t.id}')">
-                        <div style="display:flex; justify-content:space-between;">
-                            <div style="font-size:10px; color:${isDone ? '#888' : '#888'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
-                            <div style="font-size:16px;">${isDone ? '✅' : '🤍'}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="font-size:10px; color:${isDone ? '#888' : '#aaa'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
+                            <div style="font-size:22px;">${isDone ? '☑️' : '◻️'}</div>
                         </div>
                         <div class="target-name">${t.name}</div>
                     </div>
@@ -233,15 +371,26 @@
 
         function renderFullChecklist() {
             const completed = getCompleted();
-            document.getElementById('full-progress').innerText = `${completed.length} / ${ALL_TARGETS.length} Targets Captured`;
+            const filterVal = document.getElementById('category-filter').value;
             
-            document.getElementById('full-checklist-list').innerHTML = ALL_TARGETS.map(t => {
+            let filteredTargets = ALL_TARGETS;
+            if (filterVal !== "all") {
+                filteredTargets = ALL_TARGETS.filter(t => {
+                    if (filterVal === "solar") return ["Satellite", "Planet"].includes(t.type);
+                    if (filterVal === "galaxy") return t.type.includes("Galaxy") || t.type.includes("Spiral");
+                    if (filterVal === "nebula") return t.type.includes("Nebula") || t.type.includes("Remnant");
+                    if (filterVal === "cluster") return t.type.includes("Cluster") || t.type.includes("Star Cloud") || t.type === "Asterism" || t.type === "Double Star";
+                    return true;
+                });
+            }
+
+            document.getElementById('full-checklist-list').innerHTML = filteredTargets.map(t => {
                 const isDone = completed.includes(t.id);
                 return `
                     <div class="target-card ${isDone ? 'completed' : ''}" onclick="toggleTarget('${t.id}')">
-                        <div style="display:flex; justify-content:space-between;">
-                            <div style="font-size:10px; color:${isDone ? '#888' : '#888'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
-                            <div style="font-size:16px;">${isDone ? '✅' : '🤍'}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="font-size:10px; color:${isDone ? '#888' : '#aaa'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
+                            <div style="font-size:22px;">${isDone ? '☑️' : '◻️'}</div>
                         </div>
                         <div class="target-name">${t.name}</div>
                     </div>
