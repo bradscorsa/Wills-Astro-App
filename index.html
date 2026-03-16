@@ -67,7 +67,6 @@
         .hours-list { list-style: none; padding: 0; margin-top: 10px; text-align: left; }
         .hour-item { background-color: #2c2c2c; margin: 8px 0; padding: 12px; border-radius: 10px; }
 
-        /* Updated Targets Styling */
         .target-card {
             background-color: #252525;
             border-radius: 12px;
@@ -81,6 +80,7 @@
             height: 160px;
             object-fit: cover;
             background-color: #000;
+            display: block;
         }
         .target-info { padding: 12px; }
         .target-header { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -214,29 +214,27 @@
             const targetsList = document.getElementById('targets-list');
             let seasonalTargets = [];
 
-            // Targeted Catalog Data
             const targets = {
-                orion: { code: "M-42", name: "Orion Nebula", type: "Emission Nebula", desc: "The crown jewel of the winter sky. Visible to the naked eye and spectacular in photos.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg/640px-Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg" },
-                pleiades: { code: "M-45", name: "The Pleiades", type: "Open Cluster", desc: "The 'Seven Sisters'. A bright cluster of young blue stars surrounded by reflection nebulosity.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Pleiades_large.jpg/640px-Pleiades_large.jpg" },
-                whirlpool: { code: "M-51", name: "Whirlpool Galaxy", type: "Spiral Galaxy", desc: "A classic face-on spiral galaxy. Look for the 'bridge' connecting it to its smaller companion.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Messier51a.jpg/640px-Messier51a.jpg" },
-                bodes: { code: "M-81", name: "Bode's Galaxy", type: "Spiral Galaxy", desc: "A bright grand-design spiral galaxy in Ursa Major. Great for wide-field or high zoom.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/M81_HST_and_SST_and_GALEX.jpg/640px-M81_HST_and_SST_and_GALEX.jpg" },
-                andromeda: { code: "M-31", name: "Andromeda Galaxy", type: "Spiral Galaxy", desc: "Our massive galactic neighbor. So large it often requires a wide-field lens to capture the whole thing.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/M31_09-01-2011_%28re-processed%29.jpg/640px-M31_09-01-2011_%28re-processed%29.jpg" },
-                ring: { code: "M-57", name: "Ring Nebula", type: "Planetary Nebula", desc: "The remains of a dying star. Looks like a tiny glowing smoke ring in the sky.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Messier_57.jpg/640px-Messier_57.jpg" }
+                orion: { code: "M-42", name: "Orion Nebula", type: "Emission Nebula", desc: "The crown jewel of the winter sky. Spectactular in photos.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg/640px-Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg" },
+                pleiades: { code: "M-45", name: "The Pleiades", type: "Open Cluster", desc: "A bright cluster of young blue stars surrounded by reflection gas.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Pleiades_large.jpg/640px-Pleiades_large.jpg" },
+                whirlpool: { code: "M-51", name: "Whirlpool Galaxy", type: "Spiral Galaxy", desc: "A classic face-on spiral galaxy interacting with a neighbor.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Messier51a.jpg/640px-Messier51a.jpg" },
+                bodes: { code: "M-81", name: "Bode's Galaxy", type: "Spiral Galaxy", desc: "A brightgrand-design spiral galaxy in Ursa Major.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/M81_HST_and_SST_and_GALEX.jpg/640px-M81_HST_and_SST_and_GALEX.jpg" },
+                andromeda: { code: "M-31", name: "Andromeda Galaxy", type: "Spiral Galaxy", desc: "Our massive galactic neighbor. Best for wide-field lenses.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/M31_09-01-2011_%28re-processed%29.jpg/640px-M31_09-01-2011_%28re-processed%29.jpg" },
+                ring: { code: "M-57", name: "Ring Nebula", type: "Planetary Nebula", desc: "The glowing remains of a dying star.", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Messier_57.jpg/640px-Messier_57.jpg" }
             };
 
-            if (month >= 11 || month <= 1) { // Winter (Dec, Jan, Feb)
-                seasonalTargets = [targets.orion, targets.pleiades];
-            } else if (month >= 2 && month <= 4) { // Spring (March, April, May)
-                seasonalTargets = [targets.whirlpool, targets.bodes];
-            } else if (month >= 5 && month <= 7) { // Summer (June, July, Aug)
-                seasonalTargets = [targets.ring, targets.andromeda];
-            } else { // Fall (Sept, Oct, Nov)
-                seasonalTargets = [targets.andromeda, targets.pleiades];
-            }
+            if (month >= 11 || month <= 1) seasonalTargets = [targets.orion, targets.pleiades];
+            else if (month >= 2 && month <= 4) seasonalTargets = [targets.whirlpool, targets.bodes];
+            else if (month >= 5 && month <= 7) seasonalTargets = [targets.ring, targets.andromeda];
+            else seasonalTargets = [targets.andromeda, targets.pleiades];
 
             targetsList.innerHTML = seasonalTargets.map(t => `
                 <div class="target-card">
-                    <img src="${t.img}" class="target-img" alt="${t.name}">
+                    <img src="${t.img}" 
+                         class="target-img" 
+                         alt="${t.name}" 
+                         crossorigin="anonymous" 
+                         referrerpolicy="no-referrer">
                     <div class="target-info">
                         <div class="target-header">
                             <span class="target-type">${t.type}</span>
@@ -298,6 +296,10 @@
                 icon.innerText = "👎"; icon.style.color = "#f44336";
                 document.getElementById('status-text').innerText = "Clouds Tonight";
             }
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
         }
 
         updateTargets();
