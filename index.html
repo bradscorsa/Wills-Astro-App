@@ -69,7 +69,7 @@
     <div class="top-bar">
         <div class="location-info">
             <div class="location-label" id="display-city">Plymouth, MI</div>
-            <div class="coord-label" id="display-coords">42.37°N, 83.47°W</div>
+            <div class="coord-label" id="display-coords">42.3700°N, 83.4700°W</div>
         </div>
         <button class="menu-btn" onclick="toggleMenu()">✨</button>
     </div>
@@ -128,20 +128,29 @@
             navigator.clipboard.writeText(text).then(() => alert("Coordinates copied: " + text));
         }
 
+        // --- ENHANCED GRANULAR GPS LOGIC ---
         function getGPS() {
             const btn = document.getElementById('gps-btn');
-            btn.innerText = "🛰️ Locating...";
+            btn.innerText = "🛰️ Pinpointing...";
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
                     currentLat = parseFloat(position.coords.latitude).toFixed(4);
                     currentLon = parseFloat(position.coords.longitude).toFixed(4);
+                    
                     try {
                         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${currentLat}&longitude=${currentLon}&localityLanguage=en`);
                         const geoData = await response.json();
-                        const city = geoData.city || geoData.locality || "Unknown City";
+                        
+                        // Extract the most granular local name available
+                        // We check 'locality' (neighborhood/small town) first, then 'city'
+                        let localName = geoData.locality || geoData.city || "Unknown Spot";
                         const state = geoData.principalSubdivisionCode ? geoData.principalSubdivisionCode.split('-')[1] : "";
-                        currentCity = state ? `${city}, ${state}` : city;
-                    } catch (e) { currentCity = "GPS Location"; }
+                        
+                        currentCity = state ? `${localName}, ${state}` : localName;
+                    } catch (e) {
+                        currentCity = "GPS Position";
+                    }
+                    
                     btn.innerText = "🛰️ Use GPS Location";
                     saveAndReload();
                 }, (err) => {
@@ -162,7 +171,7 @@
                     currentLon = parseFloat(data.results[0].longitude).toFixed(4);
                     currentCity = data.results[0].name + (data.results[0].admin1 ? `, ${data.results[0].admin1}` : "");
                     saveAndReload();
-                } else { alert("City not found."); }
+                } else { alert("Location not found."); }
             } catch (e) { alert("Search error."); }
         }
 
@@ -206,7 +215,6 @@
             const times = data.hourly.time;
             const clouds = data.hourly.cloud_cover;
             const now = new Date();
-            
             const currentMoon = getMoonData(now);
             document.getElementById('val-clouds').innerText = clouds[0] + "%";
             document.getElementById('val-moon').innerText = currentMoon.name;
