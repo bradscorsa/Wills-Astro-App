@@ -74,6 +74,10 @@
         <button class="btn" style="background:#4caf50; color:#121212; margin-bottom: 10px;" onclick="openLogbook()">📖 View Full Logbook</button>
         <button class="btn" style="background:#ff9800; color:#121212; margin-bottom: 30px;" onclick="openScout()">⛺ Scout Merit Badge</button>
         
+        <h4 style="color:#8b5cf6; font-size: 12px; text-transform: uppercase;">Astrospheric Pro Data</h4>
+        <input type="text" id="astro-key-input" placeholder="Paste API Key here..." style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:white; border-radius:8px; margin-bottom:10px; box-sizing:border-box;">
+        <button class="btn" style="background:#8b5cf6; color:#fff; margin-bottom: 30px;" onclick="saveAstroKey()">🔑 Save Pro Key</button>
+
         <h4 style="color:#888; font-size: 12px; text-transform: uppercase;">Location & Settings</h4>
         <input type="text" id="city-input" placeholder="Enter City, State" style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:white; border-radius:8px; margin-bottom:10px; box-sizing:border-box;">
         <button class="btn" style="background:#4caf50; color:#fff;" onclick="saveCity()">🔍 Search City</button>
@@ -100,7 +104,7 @@
             </div>
         </div>
 
-        <div class="box" id="pro-data-box" style="display:block; border: 1px solid #8b5cf6;">
+        <div class="box" id="pro-data-box" style="display:none; border: 1px solid #8b5cf6;">
             <button class="refresh-btn" onclick="forceFetchAstrospheric()">🔄</button>
             <h3 style="margin-top:0; font-size:16px; color:#8b5cf6; margin-bottom: 5px;">Pro Atmospheric Data</h3>
             <div class="stats-grid" style="margin-top: 10px;">
@@ -152,8 +156,8 @@
         let lon = localStorage.getItem('astroLon') || -83.47;
         let city = localStorage.getItem('astroCity') || "Plymouth, MI";
 
-        // Hardcoded API Key (Will fall back to this if localStorage is empty)
-        let astroKey = localStorage.getItem('astroKey') || "47341ACCFADF0DBA19979C1127C4554E4933FD8A433EB829034C5861B06F2C44E801A199";
+        // Securely pull the key only from the device's local storage
+        let astroKey = localStorage.getItem('astroKey') || "";
 
         let isRedMode = localStorage.getItem('astroRedMode') === 'true';
         if (isRedMode) document.body.classList.add('red-mode');
@@ -255,6 +259,16 @@
         }
 
         // --- Astrospheric API Engine ---
+        if (astroKey) {
+            document.getElementById('astro-key-input').value = astroKey;
+            document.getElementById('pro-data-box').style.display = 'block';
+        }
+
+        function saveAstroKey() {
+            localStorage.setItem('astroKey', document.getElementById('astro-key-input').value.trim());
+            location.reload();
+        }
+
         function forceFetchAstrospheric() {
             document.getElementById('pro-sync-time').innerText = "Fetching fresh data...";
             localStorage.removeItem('astroCache');
