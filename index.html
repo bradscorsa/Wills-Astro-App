@@ -8,8 +8,11 @@
     <style>
         body { font-family: sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .top-bar { width: 100%; display: flex; justify-content: flex-end; }
-        .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #ffd700; }
-        .container { max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 20px; padding-bottom: 50px;}
+        .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #ffd700; z-index: 10; }
+        
+        /* Container acts as our screen wrapper */
+        .screen-container { max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 10px; padding-bottom: 50px; }
+        
         .box { background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); text-align: center; }
         .location-label { color: #4caf50; font-weight: bold; font-size: 14px; }
         .coord-label { font-size: 10px; color: #666; font-family: monospace; margin-top: 4px; display: block; }
@@ -18,14 +21,20 @@
         .stat-value { color: #fff; font-weight: bold; font-size: 14px; margin-top: 4px; }
         
         /* Targets & Scanning */
-        .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .target-name { color: #4caf50; font-weight: bold; font-size: 15px; }
+        .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; animation: fadeIn 0.3s ease; cursor: pointer; transition: 0.2s; }
+        .target-card:active { transform: scale(0.98); }
+        .target-card.completed { border-color: #4caf50; background: #1a2e1d; }
+        .target-card.completed .target-name { color: #888; text-decoration: line-through; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .target-name { color: #4caf50; font-weight: bold; font-size: 15px; margin-top: 5px; }
         
         .btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-scan { background: #4caf50; color: #121212; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-scan { background: #4caf50; color: #121212; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-scan:active { transform: scale(0.98); background: #81c784; }
+        .btn-nav { background: #333; color: #fff; border: 1px solid #555; margin-bottom: 15px; }
         
+        .progress-text { font-size: 12px; color: #aaa; margin-bottom: 15px; display: block; }
         #status-icon { font-size: 70px; margin: 15px 0; }
     </style>
 </head>
@@ -34,12 +43,17 @@
 
     <div id="sideMenu" style="display:none; position:fixed; top:0; right:0; width:260px; height:100%; background:#1e1e1e; z-index:100; padding:25px; box-shadow:-5px 0 20px #000;">
         <button onclick="this.parentElement.style.display='none'" style="color:#888; background:none; border:none; float:right; font-size:20px;">✕</button>
-        <h3 style="margin-top:0;">Observatory Settings</h3>
+        <h3 style="margin-top:0;">Menu</h3>
+        
+        <button class="btn" style="background:#4caf50; color:#121212; margin-bottom: 30px;" onclick="openLogbook()">📖 View Full Logbook</button>
+        
+        <h4 style="color:#888; font-size: 12px; text-transform: uppercase;">Settings</h4>
         <button class="btn" style="background:#2196F3; color:#fff;" onclick="getGPS()">🛰️ GPS Precision Sync</button>
         <button class="btn" style="background:#444; color:#fff;" onclick="nukeCache()">Force App Update</button>
+        <button class="btn" style="background:#f44336; color:#fff; margin-top:40px;" onclick="resetProgress()">⚠️ Reset Data</button>
     </div>
 
-    <div class="container">
+    <div id="screen-dashboard" class="screen-container">
         <div class="box">
             <div class="location-label" id="display-city">Plymouth, MI</div>
             <span class="coord-label" id="display-coords">42.3700°N, 83.4700°W</span>
@@ -57,13 +71,25 @@
         </div>
 
         <div class="box">
-            <h3 style="margin-top:0; font-size:16px; color:#eee;">Target Explorer</h3>
+            <h3 style="margin-top:0; font-size:16px; color:#eee; margin-bottom: 5px;">Target Explorer</h3>
+            <span class="progress-text" id="progress-tracker">Logbook: 0 / 9 Captured</span>
             <button class="btn btn-scan" onclick="scanTargets()">📡 Scan Deep Space</button>
             <div id="targets-list"></div>
         </div>
     </div>
 
+    <div id="screen-logbook" class="screen-container" style="display:none;">
+        <button class="btn btn-nav" onclick="closeLogbook()">⬅️ Back to Dashboard</button>
+        
+        <div class="box" style="padding: 15px;">
+            <h2 style="margin-top:5px; color:#4caf50; font-size: 20px;">Master Checklist</h2>
+            <span class="progress-text" id="full-progress">0 / 9 Captured</span>
+            <div id="full-checklist-list"></div>
+        </div>
+    </div>
+
     <script>
+        // --- Core App Logic ---
         let lat = localStorage.getItem('astroLat') || 42.37;
         let lon = localStorage.getItem('astroLon') || -83.47;
         let city = localStorage.getItem('astroCity') || "Plymouth, MI";
@@ -94,6 +120,22 @@
             });
         }
 
+        // --- Navigation Logic ---
+        function openLogbook() {
+            document.getElementById('sideMenu').style.display = 'none';
+            document.getElementById('screen-dashboard').style.display = 'none';
+            document.getElementById('screen-logbook').style.display = 'flex';
+            renderFullChecklist();
+        }
+
+        function closeLogbook() {
+            document.getElementById('screen-logbook').style.display = 'none';
+            document.getElementById('screen-dashboard').style.display = 'flex';
+            updateProgress();
+            renderScannedTargets();
+        }
+
+        // --- Weather & Astro Logic ---
         function getMoonData(date) {
             const synodic = 29.53;
             const knownNew = new Date(Date.UTC(2000, 0, 6, 18, 14, 0)).getTime();
@@ -130,7 +172,7 @@
             } catch (e) { document.getElementById('status-text').innerText = "Network Error"; }
         }
 
-        // --- THE SCANNER LOGIC ---
+        // --- Target Database ---
         const ALL_TARGETS = [
             { id: "M-51", name: "Whirlpool Galaxy", type: "Spiral", season: [2,3,4,5] },
             { id: "M-81", name: "Bode's Galaxy", type: "Spiral", season: [1,2,3,4] },
@@ -143,22 +185,89 @@
             { id: "M-16", name: "Eagle Nebula", type: "Emission", season: [5,6,7,8] }
         ];
 
+        let currentScan = [];
+
+        function getCompleted() {
+            return JSON.parse(localStorage.getItem('astroLogbook')) || [];
+        }
+
+        function updateProgress() {
+            const completed = getCompleted();
+            document.getElementById('progress-tracker').innerText = `Logbook: ${completed.length} / ${ALL_TARGETS.length} Captured`;
+        }
+
+        function toggleTarget(id) {
+            let completed = getCompleted();
+            if (completed.includes(id)) {
+                completed = completed.filter(t => t !== id); // Uncheck
+            } else {
+                completed.push(id); // Check
+            }
+            localStorage.setItem('astroLogbook', JSON.stringify(completed));
+            
+            // Re-render whichever screen is currently active
+            if (document.getElementById('screen-logbook').style.display === 'flex') {
+                renderFullChecklist();
+            } else {
+                renderScannedTargets();
+                updateProgress();
+            }
+        }
+
         function scanTargets() {
             const currentMonth = new Date().getMonth();
             const seasonal = ALL_TARGETS.filter(t => t.season.includes(currentMonth));
-            
-            // Randomly shuffle and pick 2
             const shuffled = seasonal.sort(() => 0.5 - Math.random());
-            const selected = shuffled.slice(0, 2);
-
-            document.getElementById('targets-list').innerHTML = selected.map(t => `
-                <div class="target-card">
-                    <div style="font-size:10px; color:#888; text-transform:uppercase;">${t.type} • ${t.id}</div>
-                    <div class="target-name">${t.name}</div>
-                </div>
-            `).join('');
+            currentScan = shuffled.slice(0, 2);
+            renderScannedTargets();
         }
 
+        // Renders the 2 targets on the Dashboard
+        function renderScannedTargets() {
+            const completed = getCompleted();
+            document.getElementById('targets-list').innerHTML = currentScan.map(t => {
+                const isDone = completed.includes(t.id);
+                return `
+                    <div class="target-card ${isDone ? 'completed' : ''}" onclick="toggleTarget('${t.id}')">
+                        <div style="display:flex; justify-content:space-between;">
+                            <div style="font-size:10px; color:${isDone ? '#888' : '#888'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
+                            <div style="font-size:16px;">${isDone ? '✅' : '🤍'}</div>
+                        </div>
+                        <div class="target-name">${t.name}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Renders the entire database in the Logbook screen
+        function renderFullChecklist() {
+            const completed = getCompleted();
+            document.getElementById('full-progress').innerText = `${completed.length} / ${ALL_TARGETS.length} Targets Captured`;
+            
+            document.getElementById('full-checklist-list').innerHTML = ALL_TARGETS.map(t => {
+                const isDone = completed.includes(t.id);
+                return `
+                    <div class="target-card ${isDone ? 'completed' : ''}" onclick="toggleTarget('${t.id}')">
+                        <div style="display:flex; justify-content:space-between;">
+                            <div style="font-size:10px; color:${isDone ? '#888' : '#888'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
+                            <div style="font-size:16px;">${is brightness ? '✅' : '🤍'}</div>
+                        </div>
+                        <div class="target-name">${t.name}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function resetProgress() {
+            if(confirm("Are you sure you want to clear your Logbook?")) {
+                localStorage.removeItem('astroLogbook');
+                scanTargets(); // Pick 2 fresh ones
+                updateProgress();
+                document.getElementById('sideMenu').style.display = 'none';
+            }
+        }
+
+        updateProgress();
         scanTargets();
         fetchData();
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
