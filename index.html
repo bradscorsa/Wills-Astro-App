@@ -23,13 +23,15 @@
         .stat-item.full-span { grid-column: 1 / -1; text-align: center; } 
         .stat-value { color: #fff; font-weight: bold; font-size: 14px; margin-top: 4px; transition: color 0.3s ease; }
         
-        .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; animation: fadeIn 0.3s ease; cursor: pointer; transition: 0.2s; }
-        .target-card:active { transform: scale(0.98); }
+        .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; animation: fadeIn 0.3s ease; transition: 0.2s; }
         .target-card.completed { border-color: #4caf50; background: #1a2e1d; }
         .target-card.completed .target-name { color: #888; text-decoration: line-through; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .target-name { color: #4caf50; font-weight: bold; font-size: 15px; margin-top: 5px; transition: 0.3s; }
+        
+        /* The link and name hover effects */
+        .target-name { color: #4caf50; font-weight: bold; font-size: 16px; margin-top: 5px; transition: 0.3s; cursor: pointer; display: inline-block; }
+        .target-name:active { transform: scale(0.98); opacity: 0.8; }
         
         .btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-scan { background: #4caf50; color: #121212; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -49,7 +51,7 @@
         body.red-mode .coord-label, body.red-mode .progress-text, body.red-mode .stat-item { color: #cc3333; }
         body.red-mode .stat-item, body.red-mode .target-card, body.red-mode .filter-select { background: #220000; border: 1px solid #440000; color: #ff4444; }
         body.red-mode .target-card.completed { border-color: #ff3333; background: #330000; }
-        body.red-mode .target-card.completed .target-name { color: #aa2222; }
+        body.red-mode .target-card.completed .target-name { color: #aa2222 !important; }
         body.red-mode .btn { background: #440000; color: #ff5555; border: 1px solid #660000; }
         body.red-mode .btn-scan { background: #660000; color: #ffaaaa; }
         body.red-mode .btn-nav { background: #220000; color: #ff4444; }
@@ -66,7 +68,7 @@
 </head>
 <body>
     <div class="top-bar">
-        <span class="app-version" id="version-marker">v2.4</span>
+        <span class="app-version" id="version-marker">v2.5</span>
         <button class="menu-btn" onclick="toggleRedMode()" id="btn-red-mode">🔴</button>
         <button class="menu-btn" onclick="document.getElementById('sideMenu').style.display='block'">✨</button>
     </div>
@@ -208,7 +210,6 @@
             window.location.href = window.location.pathname + '?v=' + new Date().getTime();
         }
 
-        // --- Location ---
         function getGPS() {
             navigator.geolocation.getCurrentPosition(async (p) => {
                 lat = p.coords.latitude.toFixed(4);
@@ -247,7 +248,6 @@
             } catch (e) { alert("City not found."); }
         }
 
-        // --- Screen Routing ---
         function openLogbook() {
             document.getElementById('sideMenu').style.display = 'none';
             document.getElementById('screen-dashboard').style.display = 'none';
@@ -282,7 +282,6 @@
             return { name: names[Math.floor(phase * 8) % 8], illum: illumination };
         }
 
-        // --- Astrospheric API Engine ---
         if (astroKey) {
             document.getElementById('astro-key-input').value = astroKey;
             document.getElementById('pro-data-box').style.display = 'block';
@@ -301,7 +300,6 @@
 
         async function fetchAstrospheric() {
             if (!astroKey) return;
-            
             const cacheRaw = localStorage.getItem('astroCache');
             if (cacheRaw) {
                 const cache = JSON.parse(cacheRaw);
@@ -310,7 +308,6 @@
                     return;
                 }
             }
-            
             try {
                 const res = await fetch('https://astrosphericpublicaccess.azurewebsites.net/api/GetForecastData_V1', {
                     method: 'POST',
@@ -330,7 +327,6 @@
         }
 
         function renderAstrospheric(data, timeObj) {
-            // Helper to get past nested objects if they exist
             const getVal = (obj) => {
                 if (typeof obj !== 'object') return obj;
                 if (obj === null) return "null";
@@ -357,10 +353,8 @@
                     }
                     document.getElementById('val-trans').innerText = tStr;
 
-                    // NEW: Pro Wind Speed
                     const wVelocityCode = getVal(data.RDPS_WindVelocity[0]);
                     if (typeof wVelocityCode === 'number') {
-                        // Convert m/s to mph
                         globalProWindSpeed = (wVelocityCode * 2.23694);
                         const proWindEl = document.getElementById('val-pro-wind');
                         proWindEl.innerText = globalProWindSpeed.toFixed(1) + " mph";
@@ -369,7 +363,6 @@
                         document.getElementById('val-pro-wind').innerText = wVelocityCode;
                     }
 
-                    // NEW: Pro Wind Direction
                     const wDirCode = getVal(data.RDPS_WindDirection[0]);
                     if (typeof wDirCode === 'number') {
                         const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
@@ -387,7 +380,6 @@
             }
         }
 
-        // --- Math function for smooth Wind Gradient ---
         function getWindColor(speed) {
             let r, g, b;
             if (speed < 7) {
@@ -406,7 +398,6 @@
             return `rgb(${r}, ${g}, ${b})`;
         }
 
-        // --- Open-Meteo Weather ---
         async function fetchData() {
             document.getElementById('display-city').innerText = city;
             document.getElementById('display-coords').innerText = `${Math.abs(lat)}°${lat >= 0 ? 'N':'S'}, ${Math.abs(lon)}°${lon >= 0 ? 'E':'W'}`;
@@ -653,15 +644,21 @@
             document.getElementById('scout-checklist-list').innerHTML = scoutTargets.map(t => generateCardHtml(t, completed)).join('');
         }
 
+        // --- NEW: The Info Zone vs Checkbox Zone Logic ---
         function generateCardHtml(t, completed) {
             const isDone = completed.includes(t.id);
+            // Generates a Google Image Search string for the specific astronomy target
+            const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(t.id + ' ' + t.name + ' space astronomy')}`;
+            
             return `
-                <div class="target-card ${isDone ? 'completed' : ''}" onclick="toggleTarget('${t.id}')">
+                <div class="target-card ${isDone ? 'completed' : ''}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="font-size:10px; color:${isDone ? '#888' : '#aaa'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
-                        <div style="font-size:22px;">${isDone ? '☑️' : '◻️'}</div>
+                        <div style="font-size:24px; cursor:pointer; padding:5px; margin:-5px;" onclick="toggleTarget('${t.id}')">${isDone ? '☑️' : '◻️'}</div>
                     </div>
-                    <div class="target-name">${t.name}</div>
+                    <a href="${searchUrl}" target="_blank" style="text-decoration:none;">
+                        <div class="target-name">${t.name} <span style="font-size:12px; opacity:0.5;">🔗</span></div>
+                    </a>
                 </div>
             `;
         }
