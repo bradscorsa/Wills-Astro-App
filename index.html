@@ -87,7 +87,7 @@
 </head>
 <body>
     <div class="top-bar">
-        <span class="app-version" id="version-marker">v0.1.4</span>
+        <span class="app-version" id="version-marker">v0.1.5</span>
         <button class="menu-btn" onclick="toggleRedMode()" id="btn-red-mode">🔴</button>
         <button class="menu-btn" onclick="document.getElementById('sideMenu').style.display='block'">✨</button>
     </div>
@@ -687,18 +687,34 @@
             document.getElementById('scout-checklist-list').innerHTML = scoutTargets.map(t => generateCardHtml(t, completed)).join('');
         }
 
+        // --- THE TELESCOPIUS BRIDGE ---
         function generateCardHtml(t, completed) {
             const isDone = completed.includes(t.id);
-            const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(t.id + ' ' + t.name + ' space astronomy')}`;
             
+            // Dynamically generate the Telescopius URL
+            let teleUrl = "";
+            let tId = t.id.toLowerCase();
+            
+            // Handle Messier and NGC
+            if (tId.startsWith('m-') || tId.startsWith('ngc-')) {
+                let catalog = tId.split('-')[0];
+                let number = tId.split('-')[1];
+                teleUrl = `https://telescopius.com/deep-sky/object/${catalog}/${number}`;
+            } else if (tId.startsWith('sys-')) {
+                // Telescopius focuses on deep space, so we route planets to a great Solar System tracker
+                teleUrl = `https://theskylive.com/planet-view?obj=${t.name.toLowerCase().replace('the ', '')}`;
+            } else {
+                teleUrl = `https://www.google.com/search?q=${encodeURIComponent(t.id + ' ' + t.name + ' space astronomy')}`;
+            }
+
             return `
                 <div class="target-card ${isDone ? 'completed' : ''}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="font-size:10px; color:${isDone ? '#888' : '#aaa'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
                         <div style="font-size:24px; cursor:pointer; padding:5px; margin:-5px;" onclick="toggleTarget('${t.id}')">${isDone ? '☑️' : '◻️'}</div>
                     </div>
-                    <a href="${searchUrl}" target="_blank" style="text-decoration:none;">
-                        <div class="target-name">${t.name} <span style="font-size:12px; opacity:0.5;">🔗</span></div>
+                    <a href="${teleUrl}" target="_blank" style="text-decoration:none;">
+                        <div class="target-name">${t.name} <span style="font-size:12px; opacity:0.5;">🔭</span></div>
                     </a>
                 </div>
             `;
