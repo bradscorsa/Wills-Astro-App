@@ -165,8 +165,7 @@
         <button class="btn" style="color:#ff9800; border-color:#ff9800; margin-bottom: 35px;" onclick="openScout(); hapticPulse();">SCOUT PROTOCOL</button>
         
         <h4 style="color:#8b5cf6; font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 2px;">ASTROSPHERIC UPLINK</h4>
-        <input type="text" id="astro-key-input" placeholder="PASTE API KEY...">
-        <button class="btn" style="color:#8b5cf6; border-color:#8b5cf6; margin-bottom: 35px;" onclick="saveAstroKey(); hapticPulse();">SAVE PRO KEY</button>
+        <button class="btn" style="color:#8b5cf6; border-color:#8b5cf6; margin-bottom: 35px;" onclick="openSettings(); hapticPulse();">CONFIGURE PRO API</button>
 
         <h4 style="color:#555; font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 2px;">LOCATION OVERRIDE</h4>
         <input type="text" id="city-input" placeholder="CITY, STATE">
@@ -243,6 +242,18 @@
             </p>
             <span class="progress-text" id="scout-progress" style="color:#ff9800;">0 / 5 SECURED</span>
             <div id="scout-checklist-list"></div>
+        </div>
+    </div>
+
+    <div id="screen-settings" class="screen-container" style="display:none;">
+        <button class="btn btn-nav" onclick="closeScreens(); hapticPulse();">ABORT TO DASH</button>
+        <div class="panel" style="padding: 20px 15px; border-top-color: #8b5cf6;">
+            <h2 style="margin-top:5px; color:#8b5cf6; font-family:'Orbitron', sans-serif; font-size: 18px; letter-spacing:2px; font-weight:700;">PRO UPLINK CONFIG</h2>
+            <p style="font-size:13px; color:#888; text-align:left; margin-bottom:20px; line-height: 1.6;">
+                Connect your Astrospheric Developer API key to unlock advanced atmospheric telemetry, including seeing, transparency, and high-resolution RDPS wind models.
+            </p>
+            <input type="text" id="astro-key-input" placeholder="PASTE API KEY...">
+            <button class="btn" style="color:#8b5cf6; border-color:#8b5cf6; margin-bottom: 10px;" onclick="saveAstroKey(); hapticPulse();">AUTHORIZE CONNECTION</button>
         </div>
     </div>
 
@@ -348,11 +359,12 @@
             } catch (e) { alert("City not found."); }
         }
 
-        // --- Routing ---
+        // --- NEW: Routing System Updates ---
         function openLogbook() {
             toggleMenu();
             document.getElementById('screen-dashboard').style.display = 'none';
             document.getElementById('screen-scout').style.display = 'none';
+            document.getElementById('screen-settings').style.display = 'none';
             document.getElementById('screen-logbook').style.display = 'flex';
             renderFullChecklist();
         }
@@ -361,13 +373,23 @@
             toggleMenu();
             document.getElementById('screen-dashboard').style.display = 'none';
             document.getElementById('screen-logbook').style.display = 'none';
+            document.getElementById('screen-settings').style.display = 'none';
             document.getElementById('screen-scout').style.display = 'flex';
             renderScoutChecklist();
+        }
+
+        function openSettings() {
+            toggleMenu();
+            document.getElementById('screen-dashboard').style.display = 'none';
+            document.getElementById('screen-logbook').style.display = 'none';
+            document.getElementById('screen-scout').style.display = 'none';
+            document.getElementById('screen-settings').style.display = 'flex';
         }
 
         function closeScreens() {
             document.getElementById('screen-logbook').style.display = 'none';
             document.getElementById('screen-scout').style.display = 'none';
+            document.getElementById('screen-settings').style.display = 'none';
             document.getElementById('screen-dashboard').style.display = 'flex';
             updateProgress();
             renderScannedTargets();
