@@ -5,205 +5,246 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wills Astro App</title>
     <link rel="manifest" href="./manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* Base Dark Mode */
-        body { font-family: sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; }
-        .top-bar { width: 100%; display: flex; justify-content: flex-end; align-items: center; gap: 15px; }
-        .app-version { color: #666; font-size: 12px; margin-right: auto; padding-left: 5px; font-family: monospace; }
-        .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #ffd700; z-index: 10; transition: 0.2s; }
+        /* --- SPACEX MISSION CONTROL THEME --- */
+        body { 
+            font-family: 'Rajdhani', sans-serif; 
+            background-color: #000000; 
+            color: #e0e0e0; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            transition: 0.3s; 
+            letter-spacing: 0.5px; 
+        }
+        
+        .top-bar { width: 100%; display: flex; justify-content: flex-end; align-items: center; gap: 15px; z-index: 10; }
+        .app-version { color: #555; font-size: 12px; margin-right: auto; padding-left: 5px; font-family: 'Orbitron', monospace; letter-spacing: 1px; }
+        .menu-btn { background: none; border: 1px solid transparent; cursor: pointer; color: #fff; padding: 5px; display: flex; transition: 0.2s; border-radius: 2px; }
+        .menu-btn:active { transform: scale(0.85); background: #222; }
         
         .screen-container { max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 10px; padding-bottom: 50px; transition: max-width 0.3s ease; }
         
-        .box { background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); text-align: center; transition: 0.3s; position: relative; }
-        .location-label { color: #4caf50; font-weight: bold; font-size: 14px; transition: 0.3s; }
-        .coord-label { font-size: 10px; color: #666; font-family: monospace; margin-top: 4px; display: block; }
+        /* Tactical Panels */
+        .panel { 
+            background: #070707; 
+            padding: 25px; 
+            border: 1px solid #222; 
+            border-top: 2px solid #4caf50; 
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8); 
+            text-align: center; 
+            transition: 0.3s; 
+            position: relative; 
+        }
+        #pro-data-box { border-top-color: #8b5cf6; }
+
+        .location-label { color: #4caf50; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
+        .coord-label { font-size: 11px; color: #555; font-family: 'Orbitron', monospace; margin-top: 6px; display: block; letter-spacing: 1px; }
         
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; text-align: left; }
-        .stat-item { background: #252525; padding: 12px; border-radius: 10px; font-size: 11px; color: #888; text-transform: uppercase; transition: 0.3s; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; text-align: left; }
+        .stat-item { background: #0a0a0a; padding: 12px; border: 1px solid #1a1a1a; font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s; }
         .stat-item.full-span { grid-column: 1 / -1; text-align: center; } 
-        .stat-value { color: #fff; font-weight: bold; font-size: 14px; margin-top: 4px; transition: color 0.3s ease; }
+        .stat-value { color: #fff; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 14px; margin-top: 6px; text-transform: uppercase; transition: color 0.3s ease; }
         
-        .target-card { background: #252525; border-radius: 12px; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #333; animation: fadeIn 0.3s ease; transition: 0.2s; overflow: hidden; }
-        .target-card.completed { border-color: #4caf50; background: #1a2e1d; }
-        .target-card.completed .target-name { color: #888; text-decoration: line-through; }
+        .target-card { background: #0a0a0a; margin-bottom: 10px; padding: 15px; text-align: left; border: 1px solid #222; border-left: 3px solid #333; transition: 0.2s; overflow: hidden; display: flex; flex-direction: column; }
+        .target-card:active { transform: scale(0.98); background: #111; }
+        .target-card.completed { border-left-color: #4caf50; background: rgba(76, 175, 80, 0.05); border-color: rgba(76,175,80,0.2); }
+        .target-card.completed .target-name { color: #555; text-decoration: line-through; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* NEW: Image Container Styles */
-        .card-image {
-            width: calc(100% + 30px);
-            height: 120px;
-            margin: -15px -15px 15px -15px;
-            background-size: cover;
-            background-position: center;
-            display: none; /* Hidden by default until API loads it */
-            animation: fadeIn 0.5s ease;
-            border-bottom: 1px solid #333;
+        .card-image { width: calc(100% + 30px); height: 120px; margin: -15px -15px 15px -15px; background-size: cover; background-position: center; display: none; animation: fadeIn 0.5s ease; border-bottom: 1px solid #222; filter: grayscale(40%) contrast(120%); }
+        
+        .target-name { color: #fff; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 14px; margin-top: 8px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; gap: 6px; letter-spacing: 1px; text-transform: uppercase; }
+        .target-name:active { color: #4caf50; }
+        
+        .btn { width: 100%; padding: 14px; margin-top: 10px; border: none; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.96); }
+        .btn-scan { background: transparent; color: #4caf50; border: 1px solid #4caf50; box-shadow: inset 0 0 10px rgba(76,175,80,0.1); margin-bottom: 5px; }
+        .btn-scan:active { background: #4caf50; color: #000; }
+        .btn-nav { background: transparent; color: #888; border: 1px solid #333; margin-bottom: 20px; }
+        
+        .filter-select { width: 100%; padding: 12px; background: #0a0a0a; color: #fff; border: 1px solid #333; margin-bottom: 15px; font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; outline: none; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .progress-text { font-size: 12px; color: #777; margin-bottom: 15px; display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* NEW: Live Data Pulsing Animation */
+        @keyframes pulse {
+            0% { filter: drop-shadow(0 0 2px currentColor); opacity: 0.8; }
+            50% { filter: drop-shadow(0 0 12px currentColor); opacity: 1; }
+            100% { filter: drop-shadow(0 0 2px currentColor); opacity: 0.8; }
         }
+        .live-data { animation: pulse 3s infinite; }
+
+        #status-icon { font-size: 65px; margin: 10px 0; display: inline-block; }
+        #status-text { font-family: 'Orbitron', sans-serif; letter-spacing: 2px; text-transform: uppercase; font-size: 15px; font-weight: 700; }
         
-        .target-name { color: #4caf50; font-weight: bold; font-size: 16px; margin-top: 5px; transition: 0.3s; cursor: pointer; display: inline-block; }
-        .target-name:active { transform: scale(0.98); opacity: 0.8; }
-        
-        .btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-scan { background: #4caf50; color: #121212; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-scan:active { transform: scale(0.98); background: #81c784; }
-        .btn-nav { background: #333; color: #fff; border: 1px solid #555; margin-bottom: 15px; }
-        
-        .filter-select { width: 100%; padding: 12px; border-radius: 8px; background: #252525; color: #fff; border: 1px solid #444; margin-bottom: 15px; font-size: 14px; font-weight: bold; outline: none; transition: 0.3s; }
-        
-        .progress-text { font-size: 12px; color: #aaa; margin-bottom: 15px; display: block; }
-        #status-icon { font-size: 70px; margin: 15px 0; }
-        .bsa-link { color: #2196F3; font-size: 13px; text-decoration: none; font-weight: bold; padding: 10px; display: inline-block; border: 1px solid #2196F3; border-radius: 6px; margin-bottom: 15px;}
+        .bsa-link { color: #64b5f6; font-family: 'Orbitron', sans-serif; font-size: 11px; text-decoration: none; font-weight: 700; padding: 12px; display: inline-block; border: 1px solid #64b5f6; letter-spacing: 1px; margin-bottom: 15px; text-transform: uppercase; }
+
+        /* THE SLIDING MENU */
+        #sideMenu { 
+            position: fixed; top: 0; right: 0; width: 280px; height: 100%; 
+            background: #050505; z-index: 100; padding: 30px; box-sizing: border-box; box-shadow: -10px 0 40px rgba(0,0,0,0.9); 
+            border-left: 1px solid #222;
+            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); overflow-y: auto; 
+        }
+        #sideMenu.open { transform: translateX(0); }
+        .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99; opacity: 0; pointer-events: none; transition: 0.4s; }
+        .menu-overlay.open { opacity: 1; pointer-events: auto; }
+        .close-btn { color: #555; background: none; border: none; float: right; font-size: 28px; cursor: pointer; padding: 0; transition: 0.2s; }
+        .close-btn:active { transform: scale(0.8); color: #fff; }
 
         /* RED LIGHT OVERRIDES */
-        body.red-mode { background-color: #0a0000; color: #ff3333; }
-        body.red-mode .box { background-color: #1a0000; box-shadow: 0 8px 25px rgba(255,0,0,0.15); border: 1px solid #330000; }
-        body.red-mode .location-label, body.red-mode .target-name, body.red-mode .stat-value { color: #ff5555 !important; }
-        body.red-mode .coord-label, body.red-mode .progress-text, body.red-mode .stat-item { color: #cc3333; }
-        body.red-mode .stat-item, body.red-mode .target-card, body.red-mode .filter-select { background: #220000; border: 1px solid #440000; color: #ff4444; }
-        body.red-mode .target-card.completed { border-color: #ff3333; background: #330000; }
-        body.red-mode .target-card.completed .target-name { color: #aa2222 !important; }
-        body.red-mode .btn { background: #440000; color: #ff5555; border: 1px solid #660000; }
-        body.red-mode .btn-scan { background: #660000; color: #ffaaaa; }
-        body.red-mode .btn-nav { background: #220000; color: #ff4444; }
-        body.red-mode #status-icon { color: #ff3333 !important; }
-        body.red-mode #status-text { color: #ff5555 !important; }
-        body.red-mode #sideMenu { background-color: #110000; box-shadow: -5px 0 20px rgba(255,0,0,0.2); }
-        body.red-mode .menu-btn { color: #ff3333; }
-        body.red-mode .bsa-link { color: #ff5555; border-color: #ff5555; }
-        /* NEW: Red mode tint on images so they don't blind the user! */
-        body.red-mode .card-image { filter: sepia(100%) hue-rotate(300deg) saturate(200%) brightness(50%) contrast(150%); border-bottom-color: #440000; }
+        body.red-mode { background: #050000; color: #ff3333; }
+        body.red-mode .panel { background: #0a0000; border-color: #300; border-top-color: #ff0000; box-shadow: inset 0 0 20px rgba(255,0,0,0.1); }
+        body.red-mode .location-label, body.red-mode .target-name, body.red-mode .stat-value { color: #ff0000 !important; }
+        body.red-mode .coord-label, body.red-mode .progress-text, body.red-mode .stat-item { color: #aa0000; }
+        body.red-mode .stat-item { background: #110000; border-color: #200; }
+        body.red-mode .target-card { background: #0a0000; border-color: #300; border-left-color: #500; }
+        body.red-mode .target-card.completed { border-left-color: #ff0000; background: rgba(255,0,0,0.05); }
+        body.red-mode .target-card.completed .target-name { color: #500 !important; }
+        body.red-mode .btn { background: transparent; color: #ff0000; border: 1px solid #ff0000; box-shadow: inset 0 0 10px rgba(255,0,0,0.1); }
+        body.red-mode .btn:active { background: #ff0000; color: #000; }
+        body.red-mode .btn-nav { border-color: #500; color: #aa0000; box-shadow: none; }
+        body.red-mode #status-icon { color: #ff0000 !important; }
+        body.red-mode #status-text { color: #ff0000 !important; }
+        body.red-mode #sideMenu { background: #0a0000; border-left-color: #300; }
+        body.red-mode .bsa-link { color: #ff0000; border-color: #ff0000; }
+        body.red-mode svg { stroke: #ff0000 !important; }
+        body.red-mode .svg-fill { fill: #ff0000 !important; }
+        body.red-mode .menu-btn svg { stroke: #ff0000 !important; }
+        body.red-mode .card-image { filter: sepia(100%) hue-rotate(300deg) saturate(300%) brightness(30%) contrast(150%); border-bottom-color: #300; }
         
-        .refresh-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; color: #8b5cf6; transition: 0.3s; }
-        .refresh-btn:active { transform: rotate(180deg); }
-        body.red-mode .refresh-btn { color: #ff5555; }
+        .refresh-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; cursor: pointer; transition: 0.3s; padding: 5px; }
+        .refresh-btn:active { transform: rotate(180deg) scale(0.8); }
 
-        /* Dashboard Target Limits - Default Mobile (Show 2) */
+        input[type="text"] { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: white; margin-bottom: 10px; box-sizing: border-box; font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="text"]:focus { outline: 1px solid #4caf50; }
+
+        /* RESPONSIVE DESIGN */
         #targets-list .target-card:nth-child(n+3) { display: none; }
-
-        /* --- RESPONSIVE DESIGN (TABLETS & DESKTOPS) --- */
         @media (min-width: 768px) {
             .screen-container { max-width: 800px; }
             .stats-grid { grid-template-columns: repeat(4, 1fr); }
-            
-            #targets-list, #full-checklist-list, #scout-checklist-list {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 15px;
-            }
+            #targets-list, #full-checklist-list, #scout-checklist-list { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
             .target-card { margin-bottom: 0; height: 100%; box-sizing: border-box; }
-
-            /* Tablet Dashboard (Show 4 in a 2x2 grid) */
-            #targets-list .target-card:nth-child(n+3) { display: block; }
+            #targets-list .target-card:nth-child(n+3) { display: flex; }
             #targets-list .target-card:nth-child(n+5) { display: none; }
         }
-
         @media (min-width: 1024px) {
             .screen-container { max-width: 1100px; }
-            #targets-list, #full-checklist-list, #scout-checklist-list {
-                grid-template-columns: 1fr 1fr 1fr;
-            }
-
-            /* Desktop Dashboard (Show 3 in a 1x3 row) */
+            #targets-list, #full-checklist-list, #scout-checklist-list { grid-template-columns: 1fr 1fr 1fr; }
             #targets-list .target-card:nth-child(n+4) { display: none; }
         }
     </style>
 </head>
 <body>
     <div class="top-bar">
-        <span class="app-version" id="version-marker">v0.1.8</span>
-        <button class="menu-btn" onclick="toggleRedMode()" id="btn-red-mode">🔴</button>
-        <button class="menu-btn" onclick="document.getElementById('sideMenu').style.display='block'">✨</button>
+        <span class="app-version" id="version-marker">v0.2.0</span>
+        <button class="menu-btn" onclick="toggleRedMode(); hapticPulse();" id="btn-red-mode">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        </button>
+        <button class="menu-btn" onclick="toggleMenu(); hapticPulse();">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
     </div>
 
-    <div id="sideMenu" style="display:none; position:fixed; top:0; right:0; width:260px; height:100%; background:#1e1e1e; z-index:100; padding:25px; box-shadow:-5px 0 20px #000; transition: 0.3s; overflow-y: auto;">
-        <button onclick="this.parentElement.style.display='none'" style="color:#888; background:none; border:none; float:right; font-size:20px;">✕</button>
-        <h3 style="margin-top:0;">Menu</h3>
+    <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+    <div id="sideMenu">
+        <button onclick="toggleMenu(); hapticPulse();" class="close-btn">×</button>
+        <h3 style="margin-top:0; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 2px; color:#fff;">SYSTEM MENU</h3>
         
-        <button class="btn" style="background:#4caf50; color:#121212; margin-bottom: 10px;" onclick="openLogbook()">📖 View Full Logbook</button>
-        <button class="btn" style="background:#ff9800; color:#121212; margin-bottom: 30px;" onclick="openScout()">⛺ Scout Merit Badge</button>
+        <button class="btn" style="color:#4caf50; border-color:#4caf50; margin-bottom: 10px;" onclick="openLogbook(); hapticPulse();">VIEW LOGBOOK</button>
+        <button class="btn" style="color:#ff9800; border-color:#ff9800; margin-bottom: 35px;" onclick="openScout(); hapticPulse();">SCOUT PROTOCOL</button>
         
-        <h4 style="color:#8b5cf6; font-size: 12px; text-transform: uppercase;">Astrospheric Pro Data</h4>
-        <input type="text" id="astro-key-input" placeholder="Paste API Key here..." style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:white; border-radius:8px; margin-bottom:10px; box-sizing:border-box;">
-        <button class="btn" style="background:#8b5cf6; color:#fff; margin-bottom: 30px;" onclick="saveAstroKey()">🔑 Save Pro Key</button>
+        <h4 style="color:#8b5cf6; font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 2px;">ASTROSPHERIC UPLINK</h4>
+        <input type="text" id="astro-key-input" placeholder="PASTE API KEY...">
+        <button class="btn" style="color:#8b5cf6; border-color:#8b5cf6; margin-bottom: 35px;" onclick="saveAstroKey(); hapticPulse();">SAVE PRO KEY</button>
 
-        <h4 style="color:#888; font-size: 12px; text-transform: uppercase;">Location & Settings</h4>
-        <input type="text" id="city-input" placeholder="Enter City, State" style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:white; border-radius:8px; margin-bottom:10px; box-sizing:border-box;">
-        <button class="btn" style="background:#4caf50; color:#fff;" onclick="saveCity()">🔍 Search City</button>
-        <button class="btn" style="background:#2196F3; color:#fff;" onclick="getGPS()">🛰️ GPS Precision Sync</button>
+        <h4 style="color:#555; font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 2px;">LOCATION OVERRIDE</h4>
+        <input type="text" id="city-input" placeholder="CITY, STATE">
+        <button class="btn" onclick="saveCity(); hapticHeavy();" style="border-color:#555; color:#aaa;">SEARCH DB</button>
+        <button class="btn" style="color:#2196F3; border-color:#2196F3;" onclick="getGPS(); hapticHeavy();">GPS SYNC</button>
         
-        <button class="btn" style="background:#444; color:#fff; margin-top:20px;" onclick="nukeCache()">Force App Update</button>
-        <button class="btn" style="background:#f44336; color:#fff; margin-top:40px;" onclick="resetProgress()">⚠️ Reset Data</button>
+        <button class="btn" style="border-color:#555; color:#555; margin-top:30px;" onclick="nukeCache(); hapticHeavy();">FORCE REBOOT</button>
+        <button class="btn" style="border-color:#f44336; color:#f44336; margin-top:40px;" onclick="resetProgress(); hapticHeavy();">PURGE DATA</button>
     </div>
 
     <div id="screen-dashboard" class="screen-container">
-        <div class="box">
+        <div class="panel">
             <div class="location-label" id="display-city">Plymouth, MI</div>
             <span class="coord-label" id="display-coords">42.3700°N, 83.4700°W</span>
-            <div id="status-icon">⏳</div>
-            <div id="status-text" style="font-weight:bold; font-size:18px;">Analyzing Skies...</div>
+            <div id="status-icon" class="live-data">⏳</div>
+            <div id="status-text">CALCULATING...</div>
         </div>
 
-        <div class="box">
+        <div class="panel">
             <div class="stats-grid">
-                <div class="stat-item">Sky Overcast<div class="stat-value" id="val-clouds">--</div></div>
-                <div class="stat-item">Wind Speed<div class="stat-value" id="val-wind">--</div></div>
-                <div class="stat-item">Moon Phase<div class="stat-value" id="val-moon">--</div></div>
-                <div class="stat-item">Moon Brightness<div class="stat-value" id="val-illum">--</div></div>
-                <div class="stat-item full-span">Next Clear Night<div class="stat-value" id="val-window" style="color:#4caf50;">--</div></div>
+                <div class="stat-item">Overcast<div class="stat-value" id="val-clouds">--</div></div>
+                <div class="stat-item">Wind Spd<div class="stat-value live-data" id="val-wind">--</div></div>
+                <div class="stat-item">Phase<div class="stat-value" id="val-moon">--</div></div>
+                <div class="stat-item">Illum.<div class="stat-value" id="val-illum">--</div></div>
+                <div class="stat-item full-span">Next Clear Window<div class="stat-value" id="val-window" style="color:#4caf50;">--</div></div>
             </div>
         </div>
 
-        <div class="box" id="pro-data-box" style="display:none; border: 1px solid #8b5cf6;">
-            <button class="refresh-btn" onclick="forceFetchAstrospheric()">🔄</button>
-            <h3 style="margin-top:0; font-size:16px; color:#8b5cf6; margin-bottom: 5px;">Pro Atmospheric Data</h3>
+        <div class="panel" id="pro-data-box" style="display:none;">
+            <button class="refresh-btn" onclick="forceFetchAstrospheric(); hapticPulse();">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="square"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            </button>
+            <h3 style="margin-top:0; font-family:'Orbitron', sans-serif; font-size:14px; font-weight:700; color:#8b5cf6; margin-bottom: 5px; letter-spacing: 2px;">PRO TELEMETRY</h3>
             <div class="stats-grid" style="margin-top: 10px;">
                 <div class="stat-item">Seeing<div class="stat-value" id="val-seeing">--</div></div>
-                <div class="stat-item">Transparency<div class="stat-value" id="val-trans">--</div></div>
-                <div class="stat-item">Pro Wind Spd<div class="stat-value" id="val-pro-wind">--</div></div>
-                <div class="stat-item">Pro Wind Dir<div class="stat-value" id="val-pro-dir">--</div></div>
+                <div class="stat-item">Trans.<div class="stat-value" id="val-trans">--</div></div>
+                <div class="stat-item">RDPS Wind<div class="stat-value live-data" id="val-pro-wind">--</div></div>
+                <div class="stat-item">RDPS Dir<div class="stat-value" id="val-pro-dir">--</div></div>
             </div>
-            <div style="font-size:10px; color:#666; margin-top:15px; text-align:center;" id="pro-sync-time">Fetching Data...</div>
+            <div style="font-size:9px; color:#555; margin-top:15px; font-family:'Orbitron', monospace; letter-spacing:1px;" id="pro-sync-time">SYNCING...</div>
         </div>
 
-        <div class="box">
-            <h3 style="margin-top:0; font-size:16px; margin-bottom: 5px;">Target Explorer</h3>
-            <span class="progress-text" id="progress-tracker">Logbook: 0 Captured</span>
-            <button class="btn btn-scan" onclick="scanTargets()">📡 Scan Deep Space</button>
-            <div id="targets-list"></div>
+        <div class="panel" style="padding: 25px 15px;">
+            <h3 style="margin-top:0; font-family:'Orbitron', sans-serif; font-size:14px; font-weight:700; margin-bottom: 5px; letter-spacing: 2px;">DEEP SPACE RADAR</h3>
+            <span class="progress-text" id="progress-tracker">LOG: 0 SECURED</span>
+            <button class="btn btn-scan" onclick="scanTargets(); hapticHeavy();">INITIATE SCAN</button>
+            <div id="targets-list" style="margin-top: 15px;"></div>
         </div>
     </div>
 
     <div id="screen-logbook" class="screen-container" style="display:none;">
-        <button class="btn btn-nav" onclick="closeScreens()">⬅️ Back to Dashboard</button>
-        <div class="box" style="padding: 15px;">
-            <h2 style="margin-top:5px; font-size: 20px;" class="location-label">Master Checklist</h2>
-            <span class="progress-text" id="full-progress">0 / 131 Captured</span>
-            <select id="category-filter" class="filter-select" onchange="renderFullChecklist()">
-                <option value="all">🌌 All Targets</option>
-                <option value="solar">🪐 Solar System</option>
-                <option value="galaxy">🌀 Galaxies</option>
-                <option value="nebula">☁️ Nebulae</option>
-                <option value="cluster">✨ Star Clusters</option>
+        <button class="btn btn-nav" onclick="closeScreens(); hapticPulse();">ABORT TO DASH</button>
+        <div class="panel" style="padding: 20px 15px;">
+            <h2 style="margin-top:5px; font-size: 18px;" class="location-label">MASTER DATABASE</h2>
+            <span class="progress-text" id="full-progress">0 / 131 SECURED</span>
+            <select id="category-filter" class="filter-select" onchange="renderFullChecklist(); hapticPulse();">
+                <option value="all">ALL FREQUENCIES</option>
+                <option value="solar">SOLAR SYSTEM</option>
+                <option value="galaxy">GALAXIES</option>
+                <option value="nebula">NEBULAE</option>
+                <option value="cluster">STAR CLUSTERS</option>
             </select>
             <div id="full-checklist-list"></div>
         </div>
     </div>
 
     <div id="screen-scout" class="screen-container" style="display:none;">
-        <button class="btn btn-nav" onclick="closeScreens()">⬅️ Back to Dashboard</button>
-        <div class="box" style="padding: 15px;">
-            <h2 style="margin-top:5px; color:#ff9800; font-size: 20px;">Astronomy Merit Badge</h2>
-            <a href="http://usscouts.org/mb/mb011.asp" target="_blank" class="bsa-link">📋 View Official BSA Requirements</a>
-            <p style="font-size:12px; color:#aaa; text-align:left; margin-bottom:15px; line-height: 1.5;">
-                Capture these 5 targets to help fulfill <b>Requirement 5b</b> and <b>Requirement 8</b>.
+        <button class="btn btn-nav" onclick="closeScreens(); hapticPulse();">ABORT TO DASH</button>
+        <div class="panel" style="padding: 20px 15px; border-top-color: #ff9800;">
+            <h2 style="margin-top:5px; color:#ff9800; font-family:'Orbitron', sans-serif; font-size: 18px; letter-spacing:2px; font-weight:700;">SCOUT PROTOCOL</h2>
+            <a href="http://usscouts.org/mb/mb011.asp" target="_blank" class="bsa-link">BSA MISSION REQS</a>
+            <p style="font-size:13px; color:#888; text-align:left; margin-bottom:20px; line-height: 1.6;">
+                Secure these 5 targets to fulfill <b>Req 5b</b> and <b>Req 8</b>.
             </p>
-            <span class="progress-text" id="scout-progress" style="font-weight:bold;">0 / 5 Captured</span>
+            <span class="progress-text" id="scout-progress" style="color:#ff9800;">0 / 5 SECURED</span>
             <div id="scout-checklist-list"></div>
         </div>
     </div>
 
     <script>
+        // --- Core Variables ---
         let lat = localStorage.getItem('astroLat') || 42.37;
         let lon = localStorage.getItem('astroLon') || -83.47;
         let city = localStorage.getItem('astroCity') || "Plymouth, MI";
@@ -212,6 +253,11 @@
         let globalWindSpeed = 0; 
         let globalProWindSpeed = null;
 
+        // --- Haptics ---
+        function hapticPulse() { if (navigator.vibrate) navigator.vibrate(40); }
+        function hapticHeavy() { if (navigator.vibrate) navigator.vibrate([30, 40, 30]); }
+
+        // --- Red Mode ---
         let isRedMode = localStorage.getItem('astroRedMode') === 'true';
         if (isRedMode) document.body.classList.add('red-mode');
 
@@ -229,22 +275,26 @@
             if (!isRedMode) {
                 const currentStatus = cloudEl.innerText;
                 if (currentStatus === "🚀") {
-                    cloudEl.style.color = "#4caf50";
                     windowEl.style.color = "#4caf50";
                 } else if (currentStatus === "🧊" || currentStatus === "☁️") {
-                    cloudEl.style.color = "#f44336";
                     windowEl.style.color = "#4caf50";
                 }
                 windEl.style.color = getWindColor(globalWindSpeed);
                 if(globalProWindSpeed !== null) proWindEl.style.color = getWindColor(globalProWindSpeed);
             } else {
-                cloudEl.style.color = "";
                 windowEl.style.color = "";
                 windEl.style.color = ""; 
                 proWindEl.style.color = "";
             }
         }
 
+        // --- Menu Slide ---
+        function toggleMenu() {
+            document.getElementById('sideMenu').classList.toggle('open');
+            document.getElementById('menuOverlay').classList.toggle('open');
+        }
+
+        // --- Cache Nuke ---
         async function nukeCache() {
             if ('serviceWorker' in navigator) {
                 const regs = await navigator.serviceWorker.getRegistrations();
@@ -295,8 +345,9 @@
             } catch (e) { alert("City not found."); }
         }
 
+        // --- Routing ---
         function openLogbook() {
-            document.getElementById('sideMenu').style.display = 'none';
+            toggleMenu();
             document.getElementById('screen-dashboard').style.display = 'none';
             document.getElementById('screen-scout').style.display = 'none';
             document.getElementById('screen-logbook').style.display = 'flex';
@@ -304,7 +355,7 @@
         }
 
         function openScout() {
-            document.getElementById('sideMenu').style.display = 'none';
+            toggleMenu();
             document.getElementById('screen-dashboard').style.display = 'none';
             document.getElementById('screen-logbook').style.display = 'none';
             document.getElementById('screen-scout').style.display = 'flex';
@@ -329,6 +380,7 @@
             return { name: names[Math.floor(phase * 8) % 8], illum: illumination };
         }
 
+        // --- Astrospheric API ---
         if (astroKey) {
             document.getElementById('astro-key-input').value = astroKey;
             document.getElementById('pro-data-box').style.display = 'block';
@@ -340,7 +392,7 @@
         }
 
         function forceFetchAstrospheric() {
-            document.getElementById('pro-sync-time').innerText = "Fetching fresh data...";
+            document.getElementById('pro-sync-time').innerText = "FETCHING...";
             localStorage.removeItem('astroCache');
             fetchAstrospheric();
         }
@@ -366,10 +418,10 @@
                     localStorage.setItem('astroCache', JSON.stringify({time: Date.now(), lat: lat, data: data}));
                     renderAstrospheric(data, new Date());
                 } else {
-                    document.getElementById('pro-sync-time').innerText = "API Limit Reached or Invalid Key";
+                    document.getElementById('pro-sync-time').innerText = "API LIMIT OR KEY ERROR";
                 }
             } catch(e) {
-                document.getElementById('pro-sync-time').innerText = "Network Error - Try Again";
+                document.getElementById('pro-sync-time').innerText = "NETWORK ERROR";
             }
         }
 
@@ -420,9 +472,9 @@
                     }
                     
                     const timeStr = timeObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    document.getElementById('pro-sync-time').innerText = `Data Synced: ${timeStr}`;
+                    document.getElementById('pro-sync-time').innerText = `LAST SYNC: ${timeStr}`;
                 } catch(e) {
-                    document.getElementById('pro-sync-time').innerText = "Data Parse Error";
+                    document.getElementById('pro-sync-time').innerText = "DATA CORRUPTION";
                 }
             }
         }
@@ -470,7 +522,7 @@
                 for(let i=0; i<d.hourly.time.length; i++) {
                     const hTime = new Date(d.hourly.time[i]);
                     if (hTime >= now && (hTime.getHours() >= 20 || hTime.getHours() <= 5) && d.hourly.cloud_cover[i] <= 30 && d.hourly.temperature_2m[i] >= 15) {
-                        nextClear = (hTime < new Date(now.getTime() + 86400000)) ? "Tonight" : `${hTime.toLocaleDateString('en-US', {weekday: 'long'})} ${hTime.getMonth() + 1}/${hTime.getDate()}`;
+                        nextClear = (hTime < new Date(now.getTime() + 86400000)) ? "Tonight" : `${hTime.toLocaleDateString('en-US', {weekday: 'short'}).toUpperCase()} ${hTime.getMonth() + 1}/${hTime.getDate()}`;
                         break;
                     }
                 }
@@ -483,10 +535,8 @@
                 
                 let statusIcon = "🚀";
                 let statusText = "GO FOR LAUNCH";
-                let statusColor = "#4caf50";
                 
                 if (!isGo) {
-                    statusColor = "#f44336";
                     if (currentTemp < 15) {
                         statusIcon = "🧊";
                         statusText = "FROZEN SCRUB";
@@ -500,14 +550,17 @@
                 document.getElementById('status-text').innerText = statusText;
                 
                 if (!isRedMode) {
-                    document.getElementById('status-icon').style.color = statusColor;
+                    if(isGo) {
+                        document.getElementById('status-icon').style.color = "#4caf50";
+                    } else {
+                        document.getElementById('status-icon').style.color = "#f44336";
+                    }
                     document.getElementById('val-window').style.color = "#4caf50";
                 }
-            } catch (e) { document.getElementById('status-text').innerText = "Network Error"; }
+            } catch (e) { document.getElementById('status-text').innerText = "NETWORK ERROR"; }
         }
 
         const ALL_MODS = [0,1,2,3,4,5,6,7,8,9,10,11];
-
         const ALL_TARGETS = [
             { id: "SYS-1", name: "The Moon", type: "Satellite", season: ALL_MODS },
             { id: "SYS-2", name: "Venus", type: "Planet", season: ALL_MODS },
@@ -649,11 +702,12 @@
 
         function updateProgress() {
             const completed = getCompleted();
-            document.getElementById('progress-tracker').innerText = `Logbook: ${completed.length} / ${ALL_TARGETS.length} Captured`;
-            document.getElementById('full-progress').innerText = `${completed.length} / ${ALL_TARGETS.length} Total Captured`;
+            document.getElementById('progress-tracker').innerText = `LOG: ${completed.length} / ${ALL_TARGETS.length} SECURED`;
+            document.getElementById('full-progress').innerText = `${completed.length} / ${ALL_TARGETS.length} SECURED`;
         }
 
         function toggleTarget(id) {
+            hapticPulse();
             let completed = getCompleted();
             if (completed.includes(id)) {
                 completed = completed.filter(t => t !== id);
@@ -680,7 +734,6 @@
             renderScannedTargets();
         }
 
-        // --- NEW: Async Wikipedia Image Fetcher ---
         async function fetchWikiImage(tId, pName) {
             if (!navigator.onLine) return; 
 
@@ -702,16 +755,13 @@
                 const data = await res.json();
                 
                 if (data.thumbnail && data.thumbnail.source) {
-                    // Find all DOM elements for this target (Dashboard, Scout, or Full Checklist)
                     const imgContainers = document.querySelectorAll(`.img-container-${tId}`);
                     imgContainers.forEach(container => {
                         container.style.backgroundImage = `url('${data.thumbnail.source}')`;
                         container.style.display = 'block';
                     });
                 }
-            } catch (e) {
-                // Silently fail if offline or network issue
-            }
+            } catch (e) {}
         }
 
         function renderScannedTargets() {
@@ -743,7 +793,7 @@
             const scoutTargets = ALL_TARGETS.filter(t => SCOUT_TARGET_IDS.includes(t.id));
             const completedCount = scoutTargets.filter(t => completed.includes(t.id)).length;
             
-            document.getElementById('scout-progress').innerText = `${completedCount} / 5 Checked Off`;
+            document.getElementById('scout-progress').innerText = `${completedCount} / 5 SECURED`;
             document.getElementById('scout-checklist-list').innerHTML = scoutTargets.map(t => generateCardHtml(t, completed)).join('');
             scoutTargets.forEach(t => fetchWikiImage(t.id, t.name));
         }
@@ -764,26 +814,32 @@
                 infoUrl = `https://www.google.com/search?q=${encodeURIComponent(t.id + ' ' + t.name + ' space astronomy')}`;
             }
 
+            const checkIcon = isDone 
+                ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="3" stroke-linecap="square"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+                : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" stroke-linecap="square"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+
+            const bookIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5; margin-top:2px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`;
+
             return `
                 <div class="target-card ${isDone ? 'completed' : ''}">
                     <div class="card-image img-container-${t.id}"></div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="font-size:10px; color:${isDone ? '#888' : '#aaa'}; text-transform:uppercase;">${t.type} • ${t.id}</div>
-                        <div style="font-size:24px; cursor:pointer; padding:5px; margin:-5px;" onclick="toggleTarget('${t.id}')">${isDone ? '☑️' : '◻️'}</div>
+                        <div style="font-size:11px; color:${isDone ? '#444' : '#666'}; font-family:'Orbitron', monospace; letter-spacing:1px;">${t.type} // ${t.id}</div>
+                        <div style="cursor:pointer; padding:5px; margin:-5px;" onclick="toggleTarget('${t.id}')">${checkIcon}</div>
                     </div>
                     <a href="${infoUrl}" target="_blank" style="text-decoration:none;">
-                        <div class="target-name">${t.name} <span style="font-size:12px; opacity:0.5;">📖</span></div>
+                        <div class="target-name">${t.name} ${bookIcon}</div>
                     </a>
                 </div>
             `;
         }
 
         function resetProgress() {
-            if(confirm("Are you sure you want to clear your Logbook?")) {
+            if(confirm("INITIATE DATA PURGE? THIS CANNOT BE UNDONE.")) {
                 localStorage.removeItem('astroLogbook');
                 scanTargets();
                 updateProgress();
-                document.getElementById('sideMenu').style.display = 'none';
+                toggleMenu();
             }
         }
 
