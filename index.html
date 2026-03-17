@@ -29,7 +29,6 @@
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* The link and name hover effects */
         .target-name { color: #4caf50; font-weight: bold; font-size: 16px; margin-top: 5px; transition: 0.3s; cursor: pointer; display: inline-block; }
         .target-name:active { transform: scale(0.98); opacity: 0.8; }
         
@@ -68,7 +67,7 @@
 </head>
 <body>
     <div class="top-bar">
-        <span class="app-version" id="version-marker">v 0.1.0</span>
+        <span class="app-version" id="version-marker">v0.1.2</span>
         <button class="menu-btn" onclick="toggleRedMode()" id="btn-red-mode">🔴</button>
         <button class="menu-btn" onclick="document.getElementById('sideMenu').style.display='block'">✨</button>
     </div>
@@ -184,8 +183,12 @@
             const proWindEl = document.getElementById('val-pro-wind');
 
             if (!isRedMode) {
-                if (cloudEl.innerText === "👍") {
+                const currentStatus = cloudEl.innerText;
+                if (currentStatus === "🚀") {
                     cloudEl.style.color = "#4caf50";
+                    windowEl.style.color = "#4caf50";
+                } else if (currentStatus === "🧊" || currentStatus === "☁️") {
+                    cloudEl.style.color = "#f44336";
                     windowEl.style.color = "#4caf50";
                 }
                 windEl.style.color = getWindColor(globalWindSpeed);
@@ -402,7 +405,7 @@
             document.getElementById('display-city').innerText = city;
             document.getElementById('display-coords').innerText = `${Math.abs(lat)}°${lat >= 0 ? 'N':'S'}, ${Math.abs(lon)}°${lon >= 0 ? 'E':'W'}`;
             try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover,wind_speed_10m&wind_speed_unit=mph&timezone=auto&forecast_days=8`);
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover,wind_speed_10m,temperature_2m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=8`);
                 const d = await res.json();
                 const now = new Date();
                 const moon = getMoonData(now);
@@ -422,18 +425,38 @@
                 let nextClear = "None in 7 days";
                 for(let i=0; i<d.hourly.time.length; i++) {
                     const hTime = new Date(d.hourly.time[i]);
-                    if (hTime >= now && (hTime.getHours() >= 20 || hTime.getHours() <= 5) && d.hourly.cloud_cover[i] <= 30) {
-                        nextClear = (hTime < new Date(now.getTime() + 86400000)) ? "Tonight" : hTime.toLocaleDateString(undefined, {weekday:'short', day:'numeric'});
+                    if (hTime >= now && (hTime.getHours() >= 20 || hTime.getHours() <= 5) && d.hourly.cloud_cover[i] <= 30 && d.hourly.temperature_2m[i] >= 15) {
+                        nextClear = (hTime < new Date(now.getTime() + 86400000)) ? "Tonight" : `${hTime.toLocaleDateString('en-US', {weekday: 'long'})} ${hTime.getMonth() + 1}/${hTime.getDate()}`;
                         break;
                     }
                 }
                 
                 document.getElementById('val-window').innerText = nextClear;
-                document.getElementById('status-icon').innerText = d.hourly.cloud_cover[0] < 30 ? "👍" : "👎";
-                document.getElementById('status-text').innerText = d.hourly.cloud_cover[0] < 30 ? "Tonight is Clear" : "Cloudy Skies";
+                
+                const currentClouds = d.hourly.cloud_cover[0];
+                const currentTemp = d.hourly.temperature_2m[0];
+                const isGo = currentClouds < 30 && currentTemp >= 15;
+                
+                let statusIcon = "🚀";
+                let statusText = "GO FOR LAUNCH";
+                let statusColor = "#4caf50";
+                
+                if (!isGo) {
+                    statusColor = "#f44336";
+                    if (currentTemp < 15) {
+                        statusIcon = "🧊";
+                        statusText = "FROZEN (SCRUBBED)";
+                    } else {
+                        statusIcon = "☁️";
+                        statusText = "CLOUDY (SCRUBBED)";
+                    }
+                }
+
+                document.getElementById('status-icon').innerText = statusIcon;
+                document.getElementById('status-text').innerText = statusText;
                 
                 if (!isRedMode) {
-                    document.getElementById('status-icon').style.color = d.hourly.cloud_cover[0] < 30 ? "#4caf50" : "#f44336";
+                    document.getElementById('status-icon').style.color = statusColor;
                     document.getElementById('val-window').style.color = "#4caf50";
                 }
             } catch (e) { document.getElementById('status-text').innerText = "Network Error"; }
@@ -644,10 +667,8 @@
             document.getElementById('scout-checklist-list').innerHTML = scoutTargets.map(t => generateCardHtml(t, completed)).join('');
         }
 
-        // --- NEW: The Info Zone vs Checkbox Zone Logic ---
         function generateCardHtml(t, completed) {
             const isDone = completed.includes(t.id);
-            // Generates a Google Image Search string for the specific astronomy target
             const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(t.id + ' ' + t.name + ' space astronomy')}`;
             
             return `
