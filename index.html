@@ -144,7 +144,7 @@
 </head>
 <body>
     <div class="top-bar">
-        <span class="app-version" id="version-marker">v0.2.1</span>
+        <span class="app-version" id="version-marker">v0.2.2</span>
         <button class="menu-btn" onclick="toggleRedMode(); hapticPulse();" id="btn-red-mode" title="Toggle Tactical Red Light">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="6"></circle>
@@ -359,7 +359,7 @@
             } catch (e) { alert("City not found."); }
         }
 
-        // --- NEW: Routing System Updates ---
+        // --- Routing System Updates ---
         function openLogbook() {
             toggleMenu();
             document.getElementById('screen-dashboard').style.display = 'none';
@@ -531,11 +531,26 @@
                 const now = new Date();
                 const moon = getMoonData(now);
                 
-                document.getElementById('val-clouds').innerText = d.hourly.cloud_cover[0] + "%";
                 document.getElementById('val-moon').innerText = moon.name;
                 document.getElementById('val-illum').innerText = moon.illum + "%";
                 
-                globalWindSpeed = d.hourly.wind_speed_10m[0];
+                // Night Vision Logic - Look ahead to the nearest observing window (8 PM - 5 AM)
+                let targetIndex = 0;
+                for(let i=0; i<24; i++) {
+                    const hTime = new Date(d.hourly.time[i]);
+                    if (hTime >= now && (hTime.getHours() >= 20 || hTime.getHours() <= 5)) {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+
+                // Update displays based on the upcoming night's condition
+                const targetClouds = d.hourly.cloud_cover[targetIndex];
+                const targetTemp = d.hourly.temperature_2m[targetIndex];
+                
+                document.getElementById('val-clouds').innerText = targetClouds + "%";
+                
+                globalWindSpeed = d.hourly.wind_speed_10m[targetIndex];
                 const windEl = document.getElementById('val-wind');
                 windEl.innerText = globalWindSpeed + " mph";
                 
@@ -554,15 +569,12 @@
                 
                 document.getElementById('val-window').innerText = nextClear;
                 
-                const currentClouds = d.hourly.cloud_cover[0];
-                const currentTemp = d.hourly.temperature_2m[0];
-                const isGo = currentClouds < 30 && currentTemp >= 15;
-                
+                const isGo = targetClouds < 30 && targetTemp >= 15;
                 let statusIcon = "🚀";
                 let statusText = "GO FOR LAUNCH";
                 
                 if (!isGo) {
-                    if (currentTemp < 15) {
+                    if (targetTemp < 15) {
                         statusIcon = "🧊";
                         statusText = "FROZEN SCRUB";
                     } else {
